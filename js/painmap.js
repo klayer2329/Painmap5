@@ -3,7 +3,7 @@
 // ============================================================
 
 const PAIN_VIEW_TABS = [
-  { id: "dorsal",    label: "背侧 / 内外侧视图", regions: ["大脚趾", "前方", "内侧", "外侧", "踝上方"] },
+  { id: "dorsal",    label: "背侧 / 内外侧视图", regions: ["大脚趾", "前方", "内侧", "外侧", "外侧足部", "踝关节", "踝上方"] },
   { id: "posterior", label: "后方视图",          regions: ["后方"] },
   { id: "plantar",   label: "足底视图",          regions: ["足底"] },
 ];
@@ -82,8 +82,10 @@ function renderPainMapSvg(viewId, selectedRegion) {
 const LOCATION_CARDS = [
   { region: "大脚趾", image: "assets/foot/dorsal.png", marker: "great-toe", label: "大脚趾" },
   { region: "前方", image: "assets/foot/dorsal.png", marker: "front", label: "足背 / 前方" },
-  { region: "内侧", image: "assets/foot/dorsal.png", marker: "medial", label: "足踝内侧" },
-  { region: "外侧", image: "assets/foot/dorsal.png", marker: "lateral", label: "足踝外侧" },
+  { region: "内侧", image: "assets/reference/ankle-medial-side.png", marker: "medial", label: "足踝内侧" },
+  { region: "外侧", image: "assets/reference/ankle-lateral-side.png", marker: "lateral", label: "足踝外侧" },
+  { region: "外侧足部", image: "assets/foot/dorsal.png", marker: "lateral-foot", label: "外侧足部" },
+  { region: "踝关节", image: "assets/foot/dorsal.png", marker: "ankle-joint", label: "踝关节深层" },
   { region: "踝上方", image: "assets/foot/dorsal.png", marker: "above", label: "踝关节上方" },
   { region: "后方", image: "assets/foot/posterior.png", marker: "posterior", label: "跟腱 / 后跟" },
   { region: "足底", image: "assets/foot/plantar.png", marker: "plantar", label: "足底" },
@@ -101,11 +103,13 @@ function renderLocationCards(selectedRegion) {
 }
 
 const DETAIL_CARD_CONFIG = {
-  "外侧": { image: "assets/foot/dorsal.png", markers: { "前下": "lat-anterior", "中下": "lat-middle", "后下": "lat-posterior" } },
-  "内侧": { image: "assets/foot/dorsal.png", markers: { "前下": "med-anterior", "中下": "med-middle", "后下": "med-posterior", "舟骨区": "navicular" } },
+  "外侧": { image: "assets/reference/ankle-lateral-side.png", markers: { "前下": "lat-anterior", "中下": "lat-middle", "后下": "lat-posterior" } },
+  "内侧": { image: "assets/reference/ankle-medial-side.png", markers: { "前下": "med-anterior", "中下": "med-middle", "后下": "med-posterior", "舟骨区": "navicular" } },
   "前方": { image: "assets/foot/dorsal.png", markers: { "踝前": "ankle-front", "中足": "dorsal-midfoot" } },
   "后方": { image: "assets/foot/posterior.png", markers: { "跟腱区": "achilles", "后跟": "heel" } },
   "足底": { image: "assets/foot/plantar.png", markers: { "前足": "forefoot", "中足": "midfoot", "足弓": "arch", "后跟内侧": "medial-heel" } },
+  "外侧足部": { image: "assets/foot/dorsal.png", markers: { "第五跖骨基底": "fifth-met-base", "外侧中足": "lateral-midfoot" } },
+  "踝关节": { image: "assets/foot/dorsal.png", markers: { "内侧关节线": "joint-medial", "关节深层": "joint-central", "外侧关节线": "joint-lateral" } },
   "踝上方": { image: "assets/foot/dorsal.png", markers: { "踝上": "above-ankle" } },
   "大脚趾": { image: "assets/foot/dorsal.png", markers: { "跖趾关节": "mtp", "第一跖骨区": "first-metatarsal" } },
 };

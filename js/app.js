@@ -11,8 +11,6 @@ const state = {
   fIndex: 0,             // functional tests 指针
   painStep: "primary",   // primary -> secondary -> shape -> depth
   testResults: {},       // { [conditionKey]: { [testName]: 'positive'|'negative' } }
-  testPosWeight: 3,       // 特殊检查阳性权重 0-10
-  testNegWeight: 3,       // 特殊检查阴性权重 0-10
   _base: null,            // 缓存基础评分结果（进入特殊检查页时计算一次）
 };
 
@@ -28,11 +26,26 @@ function setQuarter(idx) {
 
 function render(html) {
   appEl.innerHTML = `<div class="screen">${translateUi(html)}</div>`;
+  window.applyGlossaryTerms?.(appEl);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function progressNote(text) {
   return `<p class="progress-note">${text}</p>`;
+}
+
+function renderQuestionReference(field) {
+  if (field !== "swelling_severity" && field !== "bruising") return "";
+  const english = document.documentElement.lang.toLowerCase().startsWith("en");
+  const labels = english ? ["None", "Mild", "Moderate", "Severe"] : ["没有", "轻度", "中度", "重度"];
+  const image = field === "swelling_severity" ? "assets/reference/swelling-scale.png" : "assets/reference/bruising-scale.png";
+  const alt = field === "swelling_severity"
+    ? (english ? "Visual comparison from no ankle swelling to severe ankle swelling" : "从无肿胀到重度肿胀的图片对照")
+    : (english ? "Visual comparison from no bruising to severe bruising" : "从无瘀青到重度瘀青的图片对照");
+  const note = english
+    ? "Use the image as a guide and compare with the uninjured side. Skin tone, lighting, and injury appearance vary; the image is not a diagnosis."
+    : "请结合健侧进行比较。肤色、光线和实际伤情会影响外观；图片仅供分级参考，不构成诊断。";
+  return `<div class="visual-reference"><img src="${image}" alt="${alt}"><div class="visual-reference-labels">${labels.map((label) => `<span>${label}</span>`).join("")}</div></div><p class="visual-reference-note">${note}</p>`;
 }
 
 // ---------------------------------------------------------
@@ -42,20 +55,20 @@ function showWelcome() {
   setQuarter(0);
   render(`
     <p class="eyebrow">Basketball Foot &amp; Ankle Screening</p>
-    <h1 class="title">篮球运动员足踝伤病智能筛查系统</h1>
-    <p class="subtitle">适用于 12–18 岁篮球运动员：足部疼痛、踝关节疼痛、崴脚、落地受伤、跑跳疼痛、训练后逐渐疼痛等情况的初步风险筛查。</p>
+    <h1 class="title">Basketball Foot &amp; Ankle Injury Screening System</h1>
+    <p class="subtitle">A preliminary risk-screening tool for basketball athletes ages 12–18 with foot or ankle pain, sprains, landing injuries, running or jumping pain, or gradual training-related symptoms.</p>
     <div class="card">
-      <p style="margin:0 0 10px; font-weight:600;">这个工具能做什么</p>
+      <p style="margin:0 0 10px; font-weight:600;">What this tool can do</p>
       <ul style="margin:0 0 16px; padding-left:20px; color:var(--ink-soft); font-size:14.5px;">
-        <li>伤病风险筛查与可能伤病排序</li>
-        <li>指导进一步自测（功能测试）</li>
-        <li>帮助你判断是否需要尽快就医</li>
+        <li>Screen injury risk and rank possible conditions</li>
+        <li>Guide simple functional screening tests</li>
+        <li>Help identify when prompt medical assessment is appropriate</li>
       </ul>
-      <p style="margin:0 0 10px; font-weight:600;">这个工具不能做什么</p>
+      <p style="margin:0 0 10px; font-weight:600;">What this tool cannot do</p>
       <ul style="margin:0; padding-left:20px; color:var(--ink-soft); font-size:14.5px;">
-        <li>不能提供正式医学诊断</li>
-        <li>不能替代医生检查</li>
-        <li>不能替代影像学检查（X光 / MRI / CT）</li>
+        <li>Provide a formal medical diagnosis</li>
+        <li>Replace an examination by a qualified clinician</li>
+        <li>Replace imaging such as X-ray, MRI, or CT</li>
       </ul>
     </div>
     <div class="btn-row">
@@ -89,11 +102,11 @@ function showRedFlagVas() {
     </div>
   `);
   const descFor = (v) => {
-    if (v == 0) return "0 = 完全不痛";
-    if (v <= 3) return "轻微疼痛";
-    if (v <= 6) return "中等疼痛";
-    if (v <= 9) return "严重疼痛";
-    return "10 = 无法忍受";
+    if (v == 0) return "0 = No pain";
+    if (v <= 3) return "Mild pain";
+    if (v <= 6) return "Moderate pain";
+    if (v <= 9) return "Severe pain";
+    return "10 = Unbearable pain";
   };
   const numEl = document.getElementById("vasNum");
   const descEl = document.getElementById("vasDesc");
@@ -188,7 +201,7 @@ function showModeSelect() {
   render(`
     <p class="eyebrow">Q2 · 病史问卷</p>
     <h1 class="title">是否有明确的一次受伤事件导致疼痛开始？</h1>
-    <p class="subtitle">例如崴脚、落地扭伤、被人踩到脚等，能明确指出"就是那一下"</p>
+    <p class="subtitle">For example, an ankle roll, awkward landing, or landing on another player's foot where you can identify the exact moment symptoms began.</p>
     <div class="card">
       <div class="options">
         <button class="opt" data-v="acute"><span class="num">1</span><span>有 — 能明确指出受伤的那一刻（急性）</span></button>
@@ -250,14 +263,15 @@ function renderQuestion(q, onNext, onBack) {
   const currentVal = state.answers[q.field];
 
   render(`
-    <p class="eyebrow">${state.mode === "acute" ? "急性问卷" : state.mode === "chronic" ? "慢性问卷" : "问卷"}</p>
+    <p class="eyebrow">${state.mode === "acute" ? "Acute questionnaire" : state.mode === "chronic" ? "Overuse questionnaire" : "Questionnaire"}</p>
     <h1 class="title">${q.title}</h1>
-    ${multi ? progressNote("可多选") : ""}
+    ${multi ? progressNote("Select all that apply") : ""}
     <div class="card">
+      ${renderQuestionReference(q.field)}
       <div class="options" id="optList">
         ${q.options.map((o, i) => {
           const isSel = multi ? (Array.isArray(currentVal) && currentVal.includes(o.v)) : currentVal === o.v;
-          return `<button class="opt ${isSel ? "selected" : ""}" data-v="${o.v}">
+          return `<button class="opt ${isSel ? "selected" : ""}" data-option-index="${i}">
             <span class="num">${i + 1}</span>
             <span>${o.label}${o.desc ? `<span class="desc">${o.desc}</span>` : ""}</span>
           </button>`;
@@ -265,8 +279,8 @@ function renderQuestion(q, onNext, onBack) {
       </div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回</button>
-      ${multi ? `<button class="btn btn-primary" id="nextBtn">下一步 →</button>` : ""}
+      <button class="btn btn-secondary" id="backBtn">← Back</button>
+      ${multi ? `<button class="btn btn-primary" id="nextBtn">Next →</button>` : ""}
     </div>
   `);
 
@@ -276,7 +290,7 @@ function renderQuestion(q, onNext, onBack) {
     if (!Array.isArray(state.answers[q.field])) state.answers[q.field] = [];
     document.querySelectorAll("#optList .opt").forEach((el) => {
       el.onclick = () => {
-        const v = el.dataset.v;
+        const v = q.options[Number(el.dataset.optionIndex)].v;
         const arr = state.answers[q.field];
         const exists = arr.includes(v);
         if (v === "无变化") {
@@ -291,7 +305,11 @@ function renderQuestion(q, onNext, onBack) {
   } else {
     document.querySelectorAll("#optList .opt").forEach((el) => {
       el.onclick = () => {
-        state.answers[q.field] = el.dataset.v;
+        const selectedValue = q.options[Number(el.dataset.optionIndex)].v;
+        state.answers[q.field] = selectedValue;
+        if (q.field === "swelling_severity" && selectedValue === "无") {
+          delete state.answers.swelling_timing;
+        }
         onNext();
       };
     });
@@ -413,12 +431,12 @@ function showFunctionalStep() {
   if (state.fIndex >= FUNCTIONAL_TESTS.length) return showScoreBreakdown();
   const t = FUNCTIONAL_TESTS[state.fIndex];
   render(`
-    <p class="eyebrow">Q4 · 篮球功能测试</p>
+    <p class="eyebrow">Q4 · Basketball functional test</p>
     <h1 class="title">${t.title}</h1>
-    ${t.note ? `<p class="subtitle" style="color:var(--red);">⚠ ${t.note}</p>` : `<p class="subtitle">如出现剧烈疼痛请立即停止</p>`}
+    ${t.note ? `<p class="subtitle" style="color:var(--red);">⚠ ${t.note}</p>` : `<p class="subtitle">Stop immediately if this causes severe pain.</p>`}
     <div class="card">
       <div class="options" id="optList">
-        ${t.options.map((o, i) => `<button class="opt ${state.answers[t.field]===o.v?"selected":""}" data-v="${o.v}"><span class="num">${i+1}</span><span>${o.label}</span></button>`).join("")}
+        ${t.options.map((o, i) => `<button class="opt ${state.answers[t.field]===o.v?"selected":""}" data-option-index="${i}"><span class="num">${i+1}</span><span>${o.label}</span></button>`).join("")}
       </div>
     </div>
     <div class="btn-row">
@@ -432,7 +450,7 @@ function showFunctionalStep() {
   };
   document.querySelectorAll("#optList .opt").forEach((el) => {
     el.onclick = () => {
-      state.answers[t.field] = el.dataset.v;
+      state.answers[t.field] = t.options[Number(el.dataset.optionIndex)].v;
       state.fIndex += 1;
       showFunctionalStep();
     };
@@ -461,15 +479,36 @@ function showScoreBreakdown() {
     return;
   }
 
-  const { scores, supporting, conditionSet } = result;
-  const all = listAllScored(scores, conditionSet);
+  const { scores, supporting, conditionSet, locationScores } = result;
+  const all = listAllScored(scores, conditionSet, locationScores);
+
+  if (all.length === 0) {
+    const selectedLocation = [state.answers.primary_location, state.answers.secondary_location].filter(Boolean).join(" · ");
+    const hasMainRegionCandidates = Object.keys(scores).length > 0;
+    render(`
+      <p class="eyebrow">Score breakdown</p>
+      <h1 class="title">No candidate earned a positive feature score</h1>
+      <p class="subtitle">Selected location: ${selectedLocation}</p>
+      <div class="card no-match-card">
+        <p>${hasMainRegionCandidates
+          ? "The broad pain region matched the library, but the exact location and the remaining questionnaire features did not add points to those candidates. The system will not invent an unrelated result."
+          : "No condition in the current library uses this broad pain region. The first location selection is a hard filter, so unrelated conditions were removed."}</p>
+        <p>If the marker was inaccurate, choose the location again. If the location is accurate and symptoms persist, arrange a sports-medicine or foot-and-ankle assessment.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="backBtn">← Back to functional tests</button>
+        <button class="btn btn-primary" id="locationBtn">Change pain location</button>
+      </div>
+    `);
+    document.getElementById("backBtn").onclick = () => { state.fIndex = FUNCTIONAL_TESTS.length - 1; showFunctionalStep(); };
+    document.getElementById("locationBtn").onclick = showPainMapPrimary;
+    return;
+  }
 
   render(`
-    <p class="eyebrow">加分透明度</p>
-    <h1 class="title">所有有分数的伤病（共 ${all.length} 项）</h1>
-    <p class="subtitle">基础分固定由位置匹配 40% + 其他问卷特征 60% 组成；随后再叠加全局规则、紧急覆盖规则与特殊检查调整。</p>
-
-    ${all.length === 0 ? `<div class="card"><p style="margin:0; color:var(--ink-soft);">目前没有任何伤病命中明显的加分特征。可以继续下一步的特殊检查，或返回修改答案。</p></div>` : ""}
+    <p class="eyebrow">Score breakdown</p>
+    <h1 class="title">Conditions with a positive score (${all.length})</h1>
+    <p class="subtitle">The first, broad pain region is a hard filter. The second, exact location does not remove a condition; it determines the 40-point location component. Other questionnaire features contribute the remaining 60 points.</p>
 
     ${all.map((r, i) => `
       <div class="card breakdown-card">
@@ -479,21 +518,21 @@ function showScoreBreakdown() {
             <div class="breakdown-name-zh">${r.nameZh}</div>
             <div class="breakdown-name-en">${r.nameEn}</div>
           </div>
-          <span class="breakdown-score">${r.score} 分</span>
+          <span class="breakdown-score">${r.score} points</span>
         </div>
         <ul class="factor-list">
           ${(supporting[r.key] || []).map((f) => `
             <li>
-              <span class="factor-desc">${f.desc}</span>
+              <span class="factor-desc">${translateFactorDesc(f.desc)}</span>
               <span class="factor-points ${sourceClass(f.source)}">${f.points >= 0 ? "+" : ""}${f.points}</span>
-            </li>`).join("") || "<li>综合评分因素</li>"}
+            </li>`).join("") || "<li>Combined scoring factors</li>"}
         </ul>
       </div>
     `).join("")}
 
     <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回功能测试</button>
-      <button class="btn btn-primary" id="nextBtn">下一步：特殊检查 →</button>
+      <button class="btn btn-secondary" id="backBtn">← Back to functional tests</button>
+      <button class="btn btn-primary" id="nextBtn">Next: special tests →</button>
     </div>
   `);
 
@@ -509,15 +548,19 @@ function sourceClass(source) {
   return "factor-base";
 }
 
+function locationExcludedConditions(conditionSet) {
+  return Object.entries(conditionSet)
+    .filter(([, condition]) => !locationEligibilityMatches(state.answers, condition))
+    .map(([, condition]) => condition.nameEn);
+}
+
 // ---------------------------------------------------------
 // 11. RESULTS
 // ---------------------------------------------------------
 function computeResults() {
   const conditionSet = state.mode === "acute" ? ACUTE_CONDITIONS : CHRONIC_CONDITIONS;
   const overrides = state.mode === "acute" ? ACUTE_OVERRIDES : [];
-  const { scores, supporting } = computeBaseScores(conditionSet, state.answers);
-
-  applyGlobalRules(scores, supporting, state.mode, state.answers);
+  const { scores, supporting, locationScores } = computeBaseScores(conditionSet, state.answers, state.mode);
 
   let emergency = false;
   if (state.mode === "acute") {
@@ -525,8 +568,8 @@ function computeResults() {
     emergency = overrides.some((o) => o.emergency && o.when(state.answers));
   }
 
-  const ranking = rankConditions(scores, conditionSet, 3);
-  return { scores, supporting, emergency, conditionSet, ranking };
+  const ranking = rankConditions(scores, conditionSet, 3, locationScores);
+  return { scores, supporting, locationScores, emergency, conditionSet, ranking };
 }
 
 // ---------------- 11. SPECIAL TESTS RE-SCORING ----------------
@@ -548,7 +591,7 @@ function showSpecialTestScreen() {
   }
 
   state._base = base; // 缓存，供 showResults 使用
-  const prelim = rankConditions(base.scores, base.conditionSet, 3);
+  const prelim = rankConditions(base.scores, base.conditionSet, 3, base.locationScores);
 
   if (prelim.length === 0) {
     // 没有明显阳性分数，跳过特殊检查直接出报告
@@ -556,17 +599,13 @@ function showSpecialTestScreen() {
   }
 
   render(`
-    <p class="eyebrow">Q4 · 特殊检查</p>
-    <h1 class="title">对可能伤病做进一步特殊检查</h1>
-    <p class="subtitle">如果条件允许（自己测试或由队医 / 医生协助完成），记录以下检查的阳性 / 阴性结果，系统会据此微调排序。全部跳过也可以直接生成报告。</p>
+    <p class="eyebrow">Q4 · Special tests</p>
+    <h1 class="title">Perform additional screening tests</h1>
+    <p class="subtitle">If safe and practical, complete these tests with a clinician or qualified trainer. Record positive or negative findings to refine the ranking. You may leave every test untested.</p>
 
-    <div class="card">
-      <p style="margin:0 0 6px; font-weight:600; font-size:14px;">阳性权重：<span id="posVal" style="color:var(--orange);">${state.testPosWeight}</span> / 10
-        <span style="color:var(--ink-soft); font-weight:400;">— 阳性时分数 ×(1 + 0.1 × n)</span></p>
-      <input type="range" min="0" max="10" step="1" id="posSlider" value="${state.testPosWeight}">
-      <p style="margin:18px 0 6px; font-weight:600; font-size:14px;">阴性权重：<span id="negVal" style="color:var(--teal);">${state.testNegWeight}</span> / 10
-        <span style="color:var(--ink-soft); font-weight:400;">— 阴性时分数 ×(1 − 0.1 × n)</span></p>
-      <input type="range" min="0" max="10" step="1" id="negSlider" value="${state.testNegWeight}">
+    <div class="card test-weight-note">
+      <strong>How test findings affect the score</strong>
+      <p>A positive finding makes a small adjustment (+10%); a negative finding makes a smaller adjustment (−5%). Scores remain capped at 100. These screens refine the ranking but cannot diagnose or rule out a condition.</p>
     </div>
 
     ${prelim.map((r) => {
@@ -575,7 +614,7 @@ function showSpecialTestScreen() {
       return `
       <div class="card">
         <p style="margin:0 0 4px; font-weight:700; font-size:16px;">${r.nameZh}</p>
-        <p style="margin:0 0 14px; color:var(--ink-soft); font-size:13px;">当前分数 ${r.score}（初步匹配度 ${r.matchPct}%）</p>
+        <p style="margin:0 0 14px; color:var(--ink-soft); font-size:13px;">Ranked candidate · base feature score ${r.score}/100</p>
         ${tests.map((t) => {
           const current = (state.testResults[r.key] || {})[t.name];
           const stepsHtml = Array.isArray(t.steps)
@@ -584,25 +623,25 @@ function showSpecialTestScreen() {
           return `
           <div class="test-result-row" data-key="${r.key}" data-test="${t.name.replace(/"/g, '&quot;')}">
             <div class="test-instructions">
-              <span class="test-result-name">${t.name}${t.gold ? ' <span class="gold-badge">金标准</span>' : ""}</span>
+              <span class="test-result-name">${t.name}${t.gold ? ' <span class="gold-badge">Reference test</span>' : ""}</span>
               <div class="test-block">
-                <span class="test-block-label">怎么做</span>
+                <span class="test-block-label">How to perform</span>
                 <ol class="test-steps">${stepsHtml}</ol>
               </div>
               <div class="test-block">
-                <span class="test-block-label positive-label">阳性表现（怎样算阳性）</span>
+                <span class="test-block-label positive-label">Positive finding</span>
                 <div class="test-positive">${t.positive}</div>
               </div>
               <div class="test-block">
-                <span class="test-block-label negative-label">阴性表现（怎样算阴性）</span>
-                <div class="test-negative">做完动作后没有出现上述阳性表现，与健侧对比无明显差异，即为阴性。</div>
+                <span class="test-block-label negative-label">Negative finding</span>
+                <div class="test-negative">${t.negative || "The familiar symptoms are not reproduced and there is no meaningful difference from the uninjured side."}</div>
               </div>
               ${t.note ? `<p class="test-note">${t.note}</p>` : ""}
             </div>
             <div class="test-result-btns">
-              <button class="test-btn positive ${current === "positive" ? "active" : ""}" data-result="positive">阳性</button>
-              <button class="test-btn negative ${current === "negative" ? "active" : ""}" data-result="negative">阴性</button>
-              <button class="test-btn skip ${!current ? "active" : ""}" data-result="skip">未测试</button>
+              <button class="test-btn positive ${current === "positive" ? "active" : ""}" data-result="positive">Positive</button>
+              <button class="test-btn negative ${current === "negative" ? "active" : ""}" data-result="negative">Negative</button>
+              <button class="test-btn skip ${!current ? "active" : ""}" data-result="skip">Not tested</button>
             </div>
           </div>`;
         }).join("")}
@@ -610,19 +649,11 @@ function showSpecialTestScreen() {
     }).join("")}
 
     <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回</button>
-      <button class="btn btn-primary" id="finalBtn">生成最终报告 →</button>
+      <button class="btn btn-secondary" id="backBtn">← Back</button>
+      <button class="btn btn-primary" id="finalBtn">Generate final report →</button>
     </div>
   `);
 
-  document.getElementById("posSlider").oninput = (e) => {
-    state.testPosWeight = Number(e.target.value);
-    document.getElementById("posVal").textContent = e.target.value;
-  };
-  document.getElementById("negSlider").oninput = (e) => {
-    state.testNegWeight = Number(e.target.value);
-    document.getElementById("negVal").textContent = e.target.value;
-  };
   document.querySelectorAll(".test-result-row").forEach((row) => {
     const key = row.dataset.key;
     const test = row.dataset.test;
@@ -646,15 +677,15 @@ function showSpecialTestScreen() {
 function recommendationText(ranking) {
   const top = ranking[0];
   if (!top) {
-    return { urgent: false, text: "根据你提供的信息，暂未匹配到明显的高风险伤病特征。建议观察症状变化：如果疼痛持续超过一周、逐渐加重，或出现肿胀、不稳定感，建议前往运动医学科或骨科就诊评估。" };
+    return { urgent: false, text: "No strong high-risk pattern was identified. Monitor your symptoms and seek a sports-medicine or orthopedic assessment if pain persists beyond one week, worsens, or is accompanied by swelling or instability." };
   }
-  if (top.matchPct >= 70 && /fracture|骨折|Lisfranc/i.test(top.key + top.category)) {
-    return { urgent: true, text: `你的回答与「${top.nameZh}」的特征较为吻合，此类损伤存在骨折/严重结构损伤可能，建议尽快就医并完善影像学检查（X光 / CT），避免继续负重训练。` };
+  if (top.scorePct >= 70 && /fracture|骨折|Lisfranc/i.test(top.key + top.category)) {
+    return { urgent: true, text: `Your answers are consistent with ${top.nameEn}. Because a fracture or major structural injury is possible, seek prompt medical assessment and appropriate imaging. Avoid weight-bearing training until cleared.` };
   }
-  if (top.matchPct >= 70) {
-    return { urgent: false, text: `你的回答与「${top.nameZh}」的特征最为吻合。建议先减少诱发疼痛的动作与训练量，并尽快到运动医学科或骨科做进一步检查确认。下方列出了相关的推荐特殊检查，可供医生参考。` };
+  if (top.scorePct >= 70) {
+    return { urgent: false, text: `Your answers most closely match ${top.nameEn}. Reduce painful movements and training load, and arrange a sports-medicine or orthopedic assessment. The suggested tests below can support that clinical evaluation.` };
   }
-  return { urgent: false, text: "你的症状可能对应多种伤病，特征不算非常典型，建议结合下方前三项可能性，尽快由医生或队医做进一步检查确认，切勿自行按摩热敷加重损伤区域。" };
+  return { urgent: false, text: "The pattern is not highly specific and may fit several conditions. Review the top possibilities with a clinician or qualified team medical professional before returning to full training." };
 }
 
 function testAdjustmentNote(key) {
@@ -665,9 +696,9 @@ function testAdjustmentNote(key) {
   const negCount = results.filter((r) => r === "negative").length;
   if (!posCount && !negCount) return "";
   const parts = [];
-  if (posCount) parts.push(`${posCount} 项阳性 ×(1 + 0.1 × ${state.testPosWeight}) ^${posCount}`);
-  if (negCount) parts.push(`${negCount} 项阴性 ×(1 − 0.1 × ${state.testNegWeight}) ^${negCount}`);
-  return `<p class="test-adjust-note">已按特殊检查结果调整分数：${parts.join("，")}</p>`;
+  if (posCount) parts.push(`${posCount} positive finding${posCount > 1 ? "s" : ""} (+10% each)`);
+  if (negCount) parts.push(`${negCount} negative finding${negCount > 1 ? "s" : ""} (−5% each)`);
+  return `<p class="test-adjust-note">Score adjusted using special-test findings: ${parts.join(", ")}</p>`;
 }
 
 function showResults() {
@@ -675,13 +706,14 @@ function showResults() {
 
   // 复用特殊检查页缓存的基础评分（避免重复计算，且保证与该页展示的分数一致）
   const base = state._base || computeResults();
-  const { scores, supporting, emergency, conditionSet } = base;
+  const { supporting, emergency, conditionSet } = base;
+  const scores = { ...base.scores };
 
   // 应用特殊检查阳性 / 阴性调整：
   //   阳性 → score *= (1 + 0.1 × posWeight)
   //   阴性 → score *= (1 − 0.1 × negWeight)
-  applyTestAdjustments(scores, state.testResults, state.testPosWeight, state.testNegWeight);
-  const ranking = rankConditions(scores, conditionSet, 3);
+  applyTestAdjustments(scores, state.testResults);
+  const ranking = rankConditions(scores, conditionSet, 3, base.locationScores);
 
   if (emergency) {
     render(`
@@ -697,11 +729,14 @@ function showResults() {
   }
 
   const rec = recommendationText(ranking);
+  const excludedByLocation = locationExcludedConditions(conditionSet);
+  const selectedLocation = [state.answers.primary_location, state.answers.secondary_location].filter(Boolean).join(" · ");
 
   render(`
-    <p class="eyebrow">筛查报告 · Final Report</p>
-    <h1 class="title">可能伤病排序（Top ${ranking.length || 0}）</h1>
-    <p class="subtitle">评分越高，特征越吻合。这不是诊断结果，仅供参考与就医沟通使用。</p>
+    <p class="eyebrow">Screening report · Final Report</p>
+    <h1 class="title">Ranked possibilities (Top ${ranking.length || 0})</h1>
+    <p class="subtitle">The score is an absolute questionnaire feature score: 40 points for the selected pain location and 60 points for other compatible features. It is not a probability or diagnosis.</p>
+    <div class="screening-summary"><strong>Selected pain location</strong><span>${selectedLocation}</span></div>
 
     ${ranking.map((r, i) => `
       <div class="result-card ${i===0 ? "rank1":""}" data-rank="${i+1}">
@@ -712,24 +747,25 @@ function showResults() {
             <div class="result-name-en">${r.nameEn}</div>
           </div>
         </div>
-        <div class="match-bar-track"><div class="match-bar-fill" style="width:${r.matchPct}%"></div></div>
-        <div class="match-pct">匹配度 ${r.matchPct}% · 原始评分 ${r.score}</div>
+        <div class="match-bar-track"><div class="match-bar-fill" style="width:${r.scorePct}%"></div></div>
+        <div class="match-pct">Feature score ${r.score}/100 · Ranked #${i + 1}</div>
 
-        <div class="section-label">支持因素</div>
+        <div class="section-label">Supporting factors</div>
         <ul class="factor-list">
-          ${(supporting[r.key] || []).slice(0, 8).map((f) => `<li>${f.desc} <span class="factor-points">(${f.points >= 0 ? "+" : ""}${f.points})</span></li>`).join("") || "<li>综合评分因素</li>"}
+          ${(supporting[r.key] || []).slice(0, 8).map((f) => `<li>${translateFactorDesc(f.desc)} <span class="factor-points">(${f.points >= 0 ? "+" : ""}${f.points})</span></li>`).join("") || "<li>Combined scoring factors</li>"}
         </ul>
 
-        <div class="section-label">建议特殊检查（供医生 / 队医参考）</div>
+        <div class="section-label">Suggested clinical tests</div>
         <div>${(SPECIAL_TESTS[r.key] || SPECIAL_TEST_FALLBACK).map((t) => {
           const stepsText = Array.isArray(t.steps) ? t.steps.join(" → ") : "";
-          const tip = (stepsText + (stepsText ? " → " : "") + "阳性：" + t.positive).replace(/"/g, "&quot;");
+          const tip = (stepsText + (stepsText ? " → " : "") + "Positive: " + t.positive).replace(/"/g, "&quot;");
           return `<span class="test-chip" title="${tip}">${t.name}</span>`;
-        }).join("") || "<span class='test-chip'>常规查体</span>"}</div>
+        }).join("") || "<span class='test-chip'>General clinical examination</span>"}</div>
         ${testAdjustmentNote(r.key)}
 
         <div class="rehab-box">
-          <div class="section-label">康复 / 训练调整建议</div>
+          <div class="section-label">Rehabilitation / training guidance</div>
+          <p class="rehab-principle">When the joint is stable and movement has been medically cleared, pain-free muscle contractions can help reduce swelling.</p>
           <ul class="rehab-list">
             ${(REHAB[r.key] || REHAB_FALLBACK).map((line) => `<li>${line}</li>`).join("")}
           </ul>
@@ -737,14 +773,19 @@ function showResults() {
       </div>
     `).join("")}
 
+    <details class="location-exclusions">
+      <summary>Conditions excluded because the pain location did not match (${excludedByLocation.length})</summary>
+      <p>${excludedByLocation.join(", ") || "None"}</p>
+    </details>
+
     <div class="rec-box ${rec.urgent ? "urgent" : ""}">
-      <strong>${rec.urgent ? "⚠ 建议尽快就医" : "📋 下一步建议"}</strong>
+      <strong>${rec.urgent ? "⚠ Seek prompt medical assessment" : "📋 Next steps"}</strong>
       <p style="margin:8px 0 0;">${rec.text}</p>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-secondary" id="restartBtn">重新开始筛查</button>
-      <button class="btn btn-primary" id="printBtn">打印 / 保存报告</button>
+      <button class="btn btn-secondary" id="restartBtn">Restart screening</button>
+      <button class="btn btn-primary" id="printBtn">Print / save report</button>
     </div>
   `);
 

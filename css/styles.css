@@ -119,6 +119,28 @@ p.subtitle{ color:var(--ink-soft); margin:0 0 28px; font-size:15px; }
 .opt.selected .num{ background:var(--orange); }
 .opt .desc{ color:var(--ink-soft); font-size:12.5px; display:block; margin-top:2px;}
 
+/* ---------- Visual symptom references ---------- */
+.visual-reference{margin:0 0 18px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#faf8f4;}
+.visual-reference img{display:block;width:100%;height:auto;}
+.visual-reference-labels{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);}
+.visual-reference-labels span{padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--ink-soft);border-right:1px solid var(--line);}
+.visual-reference-labels span:last-child{border-right:0;}
+.visual-reference-note{font-size:11.5px;color:var(--ink-soft);margin:8px 2px 0;}
+
+/* ---------- Clickable clinical glossary ---------- */
+.clinical-term{color:#6b3fb3;background:#f1eaff;border-bottom:1px dashed #6b3fb3;border-radius:3px;padding:0 2px;font-weight:650;cursor:help;}
+.clinical-term:hover,.clinical-term:focus{background:#e5d7ff;outline:2px solid rgba(107,63,179,.22);outline-offset:2px;}
+.glossary-backdrop{position:fixed;inset:0;z-index:200;background:rgba(11,18,38,.62);display:flex;align-items:center;justify-content:center;padding:18px;}
+.glossary-modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.3);padding:22px;position:relative;}
+.glossary-close{position:absolute;right:14px;top:12px;border:0;background:var(--court);width:34px;height:34px;border-radius:50%;font-size:22px;cursor:pointer;color:var(--ink);}
+.glossary-modal h2{font-family:var(--display);margin:0 42px 6px 0;font-size:25px;}
+.glossary-modal p{color:var(--ink-soft);margin:0 0 15px;}
+.glossary-visual{border:1px solid var(--line);border-radius:10px;background:#faf8f4;padding:10px;}
+.glossary-visual svg{display:block;width:100%;height:auto;max-height:230px;}
+.glossary-visual img{display:block;width:100%;height:auto;max-height:360px;object-fit:contain;border-radius:7px;}
+.glossary-cue{margin-top:10px;padding:9px 12px;border-radius:8px;background:#fff1e0;color:var(--orange-dark);font-weight:800;text-align:center;}
+.glossary-hint{font-size:11px;color:var(--ink-soft);margin-top:9px;}
+
 /* ---------- Buttons ---------- */
 .btn-row{ display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; }
 .btn{
@@ -189,17 +211,20 @@ input[type=range]{
 .loc-thumb{display:flex;height:210px;align-items:center;justify-content:center;overflow:hidden;position:relative;border-radius:8px;background:#faf8f4;}
 .loc-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 .region-marker{position:absolute;width:34px;height:34px;border:3px solid #fff;border-radius:50%;background:rgba(232,114,11,.72);box-shadow:0 1px 7px rgba(0,0,0,.28);transform:translate(-50%,-50%);}
-.region-marker.great-toe{left:43%;top:18%;}.region-marker.front{left:52%;top:43%;}.region-marker.medial{left:39%;top:57%;}.region-marker.lateral{left:63%;top:57%;}.region-marker.above{left:52%;top:82%;}.region-marker.posterior{left:50%;top:57%;}.region-marker.plantar{left:50%;top:55%;width:54px;height:54px;}
+.region-marker.great-toe{left:43%;top:18%;}.region-marker.front{left:52%;top:43%;}.region-marker.medial{left:30%;top:59%;}.region-marker.lateral{left:29%;top:59%;}.region-marker.above{left:52%;top:82%;}.region-marker.posterior{left:50%;top:57%;}.region-marker.plantar{left:50%;top:55%;width:54px;height:54px;}
+.region-marker.lateral-foot{left:62%;top:49%;}.region-marker.ankle-joint{left:52%;top:72%;width:48px;height:48px;}
 .region-marker.forefoot{left:50%;top:30%;width:58px;height:58px;}.region-marker.midfoot{left:52%;top:52%;}.region-marker.arch{left:42%;top:59%;}.region-marker.medial-heel{left:43%;top:79%;}
-.region-marker.lat-anterior{left:64%;top:48%;}.region-marker.lat-middle{left:65%;top:58%;}.region-marker.lat-posterior{left:61%;top:69%;}
-.region-marker.med-anterior{left:39%;top:48%;}.region-marker.med-middle{left:38%;top:58%;}.region-marker.med-posterior{left:42%;top:69%;}.region-marker.navicular{left:41%;top:53%;}
+.region-marker.lat-anterior{left:39%;top:58%;}.region-marker.lat-middle{left:29%;top:62%;}.region-marker.lat-posterior{left:19%;top:65%;}
+.region-marker.med-anterior{left:40%;top:60%;}.region-marker.med-middle{left:30%;top:63%;}.region-marker.med-posterior{left:20%;top:66%;}.region-marker.navicular{left:49%;top:70%;}
 .region-marker.ankle-front{left:52%;top:72%;}.region-marker.dorsal-midfoot{left:52%;top:50%;}.region-marker.achilles{left:50%;top:45%;}.region-marker.heel{left:50%;top:72%;}
 .region-marker.above-ankle{left:52%;top:84%;}.region-marker.mtp{left:43%;top:27%;}.region-marker.first-metatarsal{left:44%;top:38%;}
+.region-marker.fifth-met-base{left:62%;top:51%;}.region-marker.lateral-midfoot{left:61%;top:44%;}.region-marker.joint-medial{left:43%;top:72%;}.region-marker.joint-central{left:52%;top:72%;}.region-marker.joint-lateral{left:61%;top:72%;}
 .detail-grid .loc-thumb{height:250px;}
 .loc-label{display:block;font-weight:700;margin-top:8px;}
 .factor-points.factor-location{color:#fff;background:var(--teal);}
 .factor-points.factor-other{color:#fff;background:var(--ink-soft);}
 @media(max-width:520px){.loc-grid{grid-template-columns:1fr;}}
+@media(max-width:520px){.visual-reference-labels span{font-size:9.5px;padding:7px 2px;}}
 
 /* ---------- Results ---------- */
 .result-card{
@@ -265,6 +290,15 @@ input[type=range]{
   border-radius:0 8px 8px 0; padding:16px 18px; margin-top:24px; font-size:14.5px;
 }
 .rec-box.urgent{ background:var(--red-soft); border-left-color:var(--red); }
+.screening-summary{display:flex;justify-content:space-between;gap:16px;align-items:center;background:var(--teal-soft);border-radius:8px;padding:12px 14px;margin:-10px 0 18px;font-size:13px;}
+.screening-summary span{color:var(--teal);font-weight:700;text-align:right;}
+.location-exclusions{margin:20px 0 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:12px 14px;color:var(--ink-soft);font-size:13px;}
+.location-exclusions summary{cursor:pointer;color:var(--ink);font-weight:700;}
+.location-exclusions p{margin:10px 0 0;line-height:1.65;}
+.test-weight-note p{margin:8px 0 0;color:var(--ink-soft);font-size:13px;}
+.no-match-card{border-left:4px solid var(--amber);background:var(--amber-soft);}
+.no-match-card p{margin:0 0 9px;color:var(--ink-soft);font-size:13.5px;}
+.no-match-card p:last-child{margin-bottom:0;}
 
 .progress-note{ font-size:12px; color:var(--ink-soft); margin-top:-14px; margin-bottom:22px; }
 
@@ -315,6 +349,7 @@ input[type=range]{
   background:var(--amber-soft); border-left:4px solid var(--amber);
   border-radius:0 8px 8px 0; padding:14px 18px; margin-top:14px;
 }
+.rehab-principle{margin:8px 0 10px;color:var(--teal);font-size:13px;font-weight:600;}
 .rehab-box .section-label{ margin-top:0; color:var(--orange-dark); }
 .rehab-list{ margin:6px 0 0; padding-left:20px; font-size:13.5px; color:var(--ink-soft); }
 .rehab-list li{ margin:4px 0; }

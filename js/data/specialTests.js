@@ -428,5 +428,14 @@ const SPECIAL_TEST_FALLBACK = [
   },
 ];
 
-SPECIAL_TESTS.Mortons_Neuroma = SPECIAL_TEST_FALLBACK;
-SPECIAL_TESTS.CECS = SPECIAL_TEST_FALLBACK;
+SPECIAL_TESTS.Mortons_Neuroma = [{
+  name: "前足挤压 / Mulder 试验",
+  steps: [
+    "坐位放松患足，先找到最痛的两个脚趾之间。",
+    "一只手从两侧轻轻挤压前足跖骨头。",
+    "另一只手的拇指从足底向上按压疼痛的趾间隙；出现剧烈疼痛时立即停止。",
+  ],
+  positive: "出现熟悉的烧灼样或电击样前足疼痛，并向脚趾放射；可伴麻木、刺痛或可触及的弹响。",
+  negative: "没有重现熟悉的前足或脚趾症状，也没有出现弹响。阴性自测不能完全排除趾间神经问题。",
+  note: "该试验只能辅助筛查 Morton 神经瘤，不能代替专业触诊或影像评估。",
+}];

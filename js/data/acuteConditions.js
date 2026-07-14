@@ -91,7 +91,7 @@ const ACUTE_CONDITIONS = {
       { points: 4, when: [{ field: "immediate_function", match: "完全不能走" }] },
       { points: 2, when: [{ field: "pain_action", match: "走路" }] },
       { points: 2, when: [{ field: "pain_action", match: "跑步" }] },
-      { points: 4, when: [{ field: "primary_location", match: "外侧" }] },
+      { points: 4, when: [{ field: "primary_location", match: "外侧足部" }, { field: "secondary_location", match: "第五跖骨基底" }] },
       { points: 4, when: [{ field: "pain_shape", match: "点" }] },
       { points: 4, when: [{ field: "pain_depth", match: "骨头" }] },
     ],
@@ -185,8 +185,7 @@ const ACUTE_CONDITIONS = {
       { points: 4, when: [{ field: "injury_sensation", match: "卡住" }] },
       { points: 2, when: [{ field: "pain_action", match: "起跳" }] },
       { points: 2, when: [{ field: "pain_action", match: "变向" }] },
-      { points: 4, when: [{ field: "primary_location", match: "踝上方" }] },
-      { points: 4, when: [{ field: "primary_location", match: "前方" }, { field: "secondary_location", match: "踝前" }] },
+      { points: 4, when: [{ field: "primary_location", match: "踝关节" }] },
       { points: 2, when: [{ field: "pain_shape", match: "片" }] },
       { points: 4, when: [{ field: "pain_depth", match: "深层" }] },
     ],
@@ -226,31 +225,5 @@ const ACUTE_OVERRIDES = [
     when: (a) => a.deformity === true,
     emergency: true,
     message: "疑似脱位，建议立即前往医院，停止评估。",
-  },
-  {
-    id: "override_fracture_tenderness",
-    desc: "无法负重 + 骨点压痛（骨性深度）→ 骨折类分数直接 +100",
-    affects: ["Lateral_Malleolus_Fracture", "Medial_Malleolus_Fracture", "Jones_Fracture", "Calcaneal_Fracture"],
-    when: (a) => a.unable_to_weight_bear === true && a.pain_depth === "骨头",
-    apply: (scores) => {
-      scores.Lateral_Malleolus_Fracture = (scores.Lateral_Malleolus_Fracture || 0) + 100;
-      scores.Medial_Malleolus_Fracture = (scores.Medial_Malleolus_Fracture || 0) + 100;
-      scores.Jones_Fracture = (scores.Jones_Fracture || 0) + 100;
-      scores.Calcaneal_Fracture = (scores.Calcaneal_Fracture || 0) + 100;
-    },
-  },
-  {
-    id: "override_lisfranc",
-    desc: "具体位置 = 中足 + 受伤机制 = 旋转 → Lisfranc 分数直接 +100",
-    affects: ["Lisfranc"],
-    when: (a) => (a.secondary_location === "中足") && a.mechanism === "旋转",
-    apply: (scores) => { scores.Lisfranc = (scores.Lisfranc || 0) + 100; },
-  },
-  {
-    id: "override_high_ankle",
-    desc: "疼痛区域 = 踝上方 → 高位踝扭伤分数直接 +100",
-    affects: ["High_Ankle_Sprain"],
-    when: (a) => a.primary_location === "踝上方",
-    apply: (scores) => { scores.High_Ankle_Sprain = (scores.High_Ankle_Sprain || 0) + 100; },
   },
 ];

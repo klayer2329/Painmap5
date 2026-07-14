@@ -166,9 +166,14 @@ const ADDITIONAL_QUESTIONS = [
 const YESNO_QUESTIONS = [
   {
     field: "bruising",
-    title: "有没有瘀青？",
+    title: "瘀青程度",
     onlyFor: "acute",
-    options: [ { v:"是", label:"有瘀青" }, { v:"否", label:"没有瘀青" } ],
+    options: [
+      { v:"无", label:"没有" },
+      { v:"轻度", label:"轻度" },
+      { v:"中度", label:"中度" },
+      { v:"重度", label:"重度" },
+    ],
   },
   {
     field: "inflammation_heat",
@@ -240,6 +245,8 @@ const PAIN_MAP_REGIONS = {
   "前方":     ["踝前", "中足"],
   "后方":     ["跟腱区", "后跟"],
   "足底":     ["前足", "中足", "足弓", "后跟内侧"],
+  "外侧足部": ["第五跖骨基底", "外侧中足"],
+  "踝关节":   ["内侧关节线", "关节深层", "外侧关节线"],
   "踝上方":   ["踝上"],
   "大脚趾":   ["跖趾关节", "第一跖骨区"],
 };

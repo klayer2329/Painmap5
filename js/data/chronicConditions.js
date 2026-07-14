@@ -36,7 +36,8 @@ const CHRONIC_CONDITIONS = {
       { points: 4, when: [{ field: "pain_action", match: "早晨第一步" }] },
       { points: 2, when: [{ field: "standing_pain", match: "有点痛" }] },
       { points: 2, when: [{ field: "standing_pain", match: "很痛" }] },
-      { points: 4, when: [{ field: "primary_location", match: "足底" }, { field: "secondary_location", match: "后跟内侧" }] },
+      { points: 4, when: [{ field: "primary_location", match: "足底" }, { field: "secondary_location", match: ["后跟内侧", "足弓"] }] },
+      { points: 2, when: [{ field: "primary_location", match: "足底" }, { field: "secondary_location", match: "中足" }] },
       { points: 2, when: [{ field: "pain_shape", match: "点" }] },
       { points: 4, when: [{ field: "pain_depth", match: "表浅" }] },
     ],
@@ -85,7 +86,7 @@ const CHRONIC_CONDITIONS = {
       { points: 2, when: [{ field: "pain_pattern", match: "持续存在" }] },
       { points: 4, when: [{ field: "standing_pain", match: "很痛" }] },
       { points: 2, when: [{ field: "pain_action", match: "早晨第一步" }] },
-      { points: 3, when: [{ field: "primary_location", match: "踝上方" }] },
+      { points: 3, when: [{ field: "primary_location", match: "踝关节" }] },
       { points: 2, when: [{ field: "pain_shape", match: "片" }] },
       { points: 2, when: [{ field: "pain_depth", match: "深层" }] },
     ],
@@ -162,18 +163,6 @@ const CHRONIC_CONDITIONS = {
     ],
   },
 
-  CECS: {
-    nameZh: "慢性运动性筋膜室综合征", nameEn: "CECS", category: "chronic-other",
-    rules: [
-      { points: 4, when: [{ field: "load_change", match: "训练量增加" }] },
-      { points: 4, when: [{ field: "load_change", match: "训练强度增加" }] },
-      { points: 4, when: [{ field: "load_change", match: "训练频率增加" }] },
-      { points: 4, when: [{ field: "pain_action", match: "跑步" }] },
-      { points: 2, when: [{ field: "pain_shape", match: "片" }] },
-      { points: 2, when: [{ field: "pain_depth", match: "深层" }] },
-    ],
-  },
-
   OLT: {
     nameZh: "距骨骨软骨损伤 (OLT)", nameEn: "Osteochondral Lesion of Talus", category: "chronic-joint",
     rules: [
@@ -182,7 +171,7 @@ const CHRONIC_CONDITIONS = {
       { points: 1, when: [{ field: "load_change", match: "训练频率增加" }] },
       { points: 2, when: [{ field: "pain_action", match: "起跳" }] },
       { points: 2, when: [{ field: "pain_action", match: "变向" }] },
-      { points: 4, when: [{ field: "primary_location", match: "踝上方" }] },
+      { points: 4, when: [{ field: "primary_location", match: "踝关节" }] },
       { points: 2, when: [{ field: "pain_shape", match: "片" }] },
       { points: 4, when: [{ field: "pain_depth", match: "深层" }] },
     ],
@@ -198,7 +187,7 @@ const CHRONIC_CONDITIONS = {
       { points: 2, when: [{ field: "pain_action", match: "起跳" }] },
       { points: 2, when: [{ field: "pain_action", match: "落地" }] },
       { points: 1, when: [{ field: "pain_pattern", match: "持续存在" }] },
-      { points: 3, when: [{ field: "primary_location", match: "踝上方" }] },
+      { points: 3, when: [{ field: "primary_location", match: "踝关节" }] },
       { points: 2, when: [{ field: "pain_shape", match: "片" }] },
       { points: 3, when: [{ field: "pain_depth", match: "深层" }] },
     ],
