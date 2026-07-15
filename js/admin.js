@@ -201,6 +201,24 @@
     await loadRecords();
   };
 
+  document.getElementById("recoveryBtn").onclick = async () => {
+    const message = document.getElementById("loginMessage");
+    const email = document.getElementById("adminEmail").value.trim();
+    if (!email) {
+      message.textContent = "Enter the administrator email first.";
+      message.className = "admin-message error";
+      return;
+    }
+    message.textContent = "Sending password recovery email…";
+    message.className = "admin-message";
+    const redirectTo = new URL("reset-password.html", window.location.href).href;
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    message.textContent = error
+      ? error.message
+      : "Recovery email sent. Open the newest message and use its link once.";
+    message.className = `admin-message${error ? " error" : ""}`;
+  };
+
   signOutBtn.onclick = async () => { await client.auth.signOut(); showLogin(); };
   document.getElementById("refreshBtn").onclick = loadRecords;
   document.getElementById("exportBtn").onclick = exportCsv;
