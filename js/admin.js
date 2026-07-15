@@ -49,17 +49,26 @@
     dataMessage.textContent = "Loading records…";
     dataMessage.className = "admin-message";
     recordsTable.hidden = true;
-    const { data, error } = await client
-      .from(cfg.table || "screening_submissions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) {
-      dataMessage.textContent = error.message;
-      dataMessage.className = "admin-message error";
-      return;
+    const batchSize = 1000;
+    const allRecords = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await client
+        .from(cfg.table || "screening_submissions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + batchSize - 1);
+      if (error) {
+        dataMessage.textContent = error.message;
+        dataMessage.className = "admin-message error";
+        return;
+      }
+      allRecords.push(...(data || []));
+      if (!data || data.length < batchSize) break;
+      from += batchSize;
+      dataMessage.textContent = `Loading records… ${allRecords.length}`;
     }
-    records = data || [];
+    records = allRecords;
     applyFilters();
   }
 
