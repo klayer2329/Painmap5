@@ -9,6 +9,7 @@
 .admin-panel p{color:var(--ink-soft);line-height:1.55;}
 .admin-login{max-width:520px;margin:30px auto;}
 .admin-login form{display:grid;gap:14px;margin-top:20px;}
+.admin-login form[hidden]{display:none!important;}
 .admin-login label,.admin-toolbar label{font-size:12px;font-weight:700;color:var(--ink-soft);display:grid;gap:6px;}
 .admin-login input,.admin-toolbar input,.admin-toolbar select{font:inherit;border:1.5px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:10px 12px;}
 .admin-message{font-size:13px;color:var(--ink-soft);margin:8px 0 0;}
