@@ -12,6 +12,10 @@ const state = {
   painStep: "primary",   // primary -> secondary -> shape -> depth
   testResults: {},       // { [conditionKey]: { [testName]: 'positive'|'negative' } }
   _base: null,            // 缓存基础评分结果（进入特殊检查页时计算一次）
+  dataConsent: false,
+  sessionId: window.ScreeningDataStore?.uuid?.() || null,
+  submissionId: null,
+  _submissionPromise: null,
 };
 
 const appEl = document.getElementById("app");
@@ -32,6 +36,60 @@ function render(html) {
 
 function progressNote(text) {
   return `<p class="progress-note">${text}</p>`;
+}
+
+function dataSaveStatusHtml() {
+  if (!state.dataConsent) return "";
+  return `<div class="data-save-status" id="dataSaveStatus" role="status">Preparing anonymous data record…</div>`;
+}
+
+function setDataSaveStatus(message, type = "") {
+  const target = document.getElementById("dataSaveStatus");
+  if (!target) return;
+  target.textContent = message;
+  target.className = `data-save-status ${type}`.trim();
+}
+
+function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [], emergency = false) {
+  if (!state.dataConsent || state.submissionId) return;
+  if (state._submissionPromise) return;
+  const store = window.ScreeningDataStore;
+  if (!store?.isConfigured?.()) {
+    setDataSaveStatus("Anonymous data storage is not connected yet.", "warning");
+    return;
+  }
+  setDataSaveStatus("Saving this anonymous screening record…");
+  state._submissionPromise = store.submitScreening({
+    state,
+    outcome,
+    baseScores: base?.scores || {},
+    finalScores,
+    ranking: ranking.map((item, index) => ({
+      rank: index + 1,
+      key: item.key,
+      nameEn: item.nameEn,
+      nameZh: item.nameZh,
+      score: item.score,
+      scorePct: item.scorePct,
+    })),
+    emergency,
+  }).then((result) => {
+    if (result.status === "saved" || result.status === "already-saved") {
+      setDataSaveStatus(`Anonymous screening saved · Record ${result.id.slice(0, 8)}`, "success");
+    } else if (result.status === "not-configured") {
+      setDataSaveStatus("Anonymous data storage is not connected yet.", "warning");
+    }
+  }).catch((error) => {
+    console.error("Unable to save anonymous screening", error);
+    setDataSaveStatus("The screening report is complete, but the anonymous record could not be saved.", "error");
+    state._submissionPromise = null;
+  });
+}
+
+function beginNewDataSession() {
+  state.sessionId = window.ScreeningDataStore?.uuid?.() || null;
+  state.submissionId = null;
+  state._submissionPromise = null;
 }
 
 function renderQuestionReference(field) {
@@ -71,11 +129,28 @@ function showWelcome() {
         <li>Replace imaging such as X-ray, MRI, or CT</li>
       </ul>
     </div>
+    <div class="card consent-card">
+      <p class="consent-title">Anonymous research data</p>
+      <p class="consent-copy">With permission, this screening will anonymously save every answer, pain location, functional and special-test selection, calculated score, and final ranking. No name, email, phone number, or account is collected.</p>
+      <label class="consent-control">
+        <input type="checkbox" id="dataConsent" ${state.dataConsent ? "checked" : ""}>
+        <span>I agree to anonymous storage of this screening and its results.</span>
+      </label>
+      <details class="consent-details"><summary>What is stored?</summary><p>Question choices, pain-map selections, test findings, scores, result ranking, anonymous browser ID, and completion time. You can continue without saving.</p></details>
+    </div>
     <div class="btn-row">
-      <button class="btn btn-primary" id="startBtn">开始筛查 →</button>
+      <button class="btn btn-secondary" id="privateStartBtn">Continue without saving</button>
+      <button class="btn btn-primary" id="startBtn" ${state.dataConsent ? "" : "disabled"}>Start and save anonymously →</button>
     </div>
   `);
-  document.getElementById("startBtn").onclick = showRedFlagChecklist;
+  const consent = document.getElementById("dataConsent");
+  const start = document.getElementById("startBtn");
+  consent.onchange = () => {
+    state.dataConsent = consent.checked;
+    start.disabled = !consent.checked;
+  };
+  document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showRedFlagChecklist(); };
+  start.onclick = () => { state.dataConsent = true; showRedFlagChecklist(); };
 }
 
 // ---------------------------------------------------------
@@ -182,15 +257,13 @@ function showEmergency() {
       <p>根据你提供的信息（剧烈疼痛或负重/畸形/夜间痛/神经症状等），建议尽快前往医院或运动医学专科就诊，明确诊断并排除骨折、脱位或神经血管损伤等严重情况。</p>
       <p style="margin-top:14px; font-weight:600;">本次筛查到此结束。</p>
     </div>
+    ${dataSaveStatusHtml()}
     <div class="btn-row">
       <button class="btn btn-secondary" id="restartBtn">重新开始筛查</button>
     </div>
   `);
-  document.getElementById("restartBtn").onclick = () => {
-    Object.keys(state.answers).forEach((k) => delete state.answers[k]);
-    state.mode = null; state.qIndex = 0; state.aIndex = 0; state.yIndex = 0; state.fIndex = 0; state.painStep = "primary";
-    showWelcome();
-  };
+  saveScreeningRecord("emergency_stop", null, {}, [], true);
+  document.getElementById("restartBtn").onclick = () => location.reload();
 }
 
 // ---------------------------------------------------------
@@ -473,8 +546,10 @@ function showScoreBreakdown() {
         <h1>疑似脱位 / 严重结构损伤</h1>
         <p>建议立即前往医院急诊或运动医学专科就诊，本次筛查评分到此中止。</p>
       </div>
+      ${dataSaveStatusHtml()}
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
+    saveScreeningRecord("emergency_stop", result, result.scores, [], true);
     document.getElementById("restartBtn").onclick = () => location.reload();
     return;
   }
@@ -495,13 +570,15 @@ function showScoreBreakdown() {
           : "No condition in the current library uses this broad pain region. The first location selection is a hard filter, so unrelated conditions were removed."}</p>
         <p>If the marker was inaccurate, choose the location again. If the location is accurate and symptoms persist, arrange a sports-medicine or foot-and-ankle assessment.</p>
       </div>
+      ${dataSaveStatusHtml()}
       <div class="btn-row">
         <button class="btn btn-secondary" id="backBtn">← Back to functional tests</button>
         <button class="btn btn-primary" id="locationBtn">Change pain location</button>
       </div>
     `);
-    document.getElementById("backBtn").onclick = () => { state.fIndex = FUNCTIONAL_TESTS.length - 1; showFunctionalStep(); };
-    document.getElementById("locationBtn").onclick = showPainMapPrimary;
+    saveScreeningRecord("no_candidate", result, result.scores, [], false);
+    document.getElementById("backBtn").onclick = () => { beginNewDataSession(); state.fIndex = FUNCTIONAL_TESTS.length - 1; showFunctionalStep(); };
+    document.getElementById("locationBtn").onclick = () => { beginNewDataSession(); showPainMapPrimary(); };
     return;
   }
 
@@ -584,8 +661,10 @@ function showSpecialTestScreen() {
         <h1>疑似脱位 / 严重结构损伤</h1>
         <p>建议立即前往医院急诊或运动医学专科就诊，本次筛查评分到此中止。</p>
       </div>
+      ${dataSaveStatusHtml()}
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
+    saveScreeningRecord("emergency_stop", base, base.scores, [], true);
     document.getElementById("restartBtn").onclick = () => location.reload();
     return;
   }
@@ -722,8 +801,10 @@ function showResults() {
         <h1>疑似脱位 / 严重结构损伤</h1>
         <p>建议立即前往医院急诊或运动医学专科就诊，本次筛查评分到此中止。</p>
       </div>
+      ${dataSaveStatusHtml()}
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
+    saveScreeningRecord("emergency_stop", base, scores, [], true);
     document.getElementById("restartBtn").onclick = () => location.reload();
     return;
   }
@@ -783,11 +864,15 @@ function showResults() {
       <p style="margin:8px 0 0;">${rec.text}</p>
     </div>
 
+    ${dataSaveStatusHtml()}
+
     <div class="btn-row">
       <button class="btn btn-secondary" id="restartBtn">Restart screening</button>
       <button class="btn btn-primary" id="printBtn">Print / save report</button>
     </div>
   `);
+
+  saveScreeningRecord(ranking.length ? "completed" : "no_candidate", base, scores, ranking, false);
 
   document.getElementById("printBtn").onclick = () => window.print();
   document.getElementById("restartBtn").onclick = () => location.reload();

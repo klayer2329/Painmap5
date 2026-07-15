@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Screening Data Admin · HoopFoot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <div>
+      <p class="eyebrow">HoopFoot · Restricted access</p>
+      <h1>Screening Data Admin</h1>
+    </div>
+    <div class="admin-header-actions">
+      <a class="btn btn-secondary" href="index.html">Open screening</a>
+      <button class="btn btn-secondary" id="signOutBtn" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section id="setupPanel" class="admin-panel" hidden>
+      <h2>Database connection required</h2>
+      <p>Add your Supabase project URL and publishable key to <code>js/supabase-config.js</code>, then run <code>supabase/setup.sql</code> in the Supabase SQL Editor.</p>
+    </section>
+
+    <section id="loginPanel" class="admin-panel admin-login" hidden>
+      <h2>Administrator sign in</h2>
+      <p>Only a Supabase user with <code>app_metadata.role = screening_admin</code> can read records.</p>
+      <form id="loginForm">
+        <label>Email<input type="email" id="adminEmail" autocomplete="username" required></label>
+        <label>Password<input type="password" id="adminPassword" autocomplete="current-password" required></label>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+        <p id="loginMessage" class="admin-message" role="status"></p>
+      </form>
+    </section>
+
+    <section id="dashboardPanel" hidden>
+      <div class="admin-stats" id="statsGrid"></div>
+      <div class="admin-panel admin-toolbar">
+        <label>Mode
+          <select id="modeFilter"><option value="">All</option><option value="acute">Acute</option><option value="chronic">Overuse</option></select>
+        </label>
+        <label>Outcome
+          <select id="outcomeFilter"><option value="">All</option><option value="completed">Completed</option><option value="no_candidate">No candidate</option><option value="emergency_stop">Emergency stop</option></select>
+        </label>
+        <label class="admin-search">Search
+          <input id="searchFilter" type="search" placeholder="ID, location, or top result">
+        </label>
+        <button class="btn btn-secondary" id="refreshBtn">Refresh</button>
+        <button class="btn btn-primary" id="exportBtn">Export CSV</button>
+      </div>
+
+      <div class="admin-panel admin-table-wrap">
+        <div id="dataMessage" class="admin-message" role="status">Loading records…</div>
+        <table class="admin-table" id="recordsTable" hidden>
+          <thead><tr><th>Completed</th><th>Mode</th><th>Location</th><th>Outcome</th><th>Top result</th><th>Score</th><th>Actions</th></tr></thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="detailDialog" class="admin-dialog">
+    <div class="admin-dialog-head"><h2>Screening record</h2><button class="btn btn-secondary" id="closeDialogBtn">Close</button></div>
+    <div id="detailContent"></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

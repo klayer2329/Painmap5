@@ -24,3 +24,7 @@ Warning-sign checklist → pain VAS → acute/overuse questionnaire → image-ba
 - User-visible questions, controls, score explanations, test guidance, rehabilitation guidance, results, and documentation are presented in English. Internal answer tokens remain compatible with the source clinical rules.
 
 Key files: `js/app.js` (flow), `js/engine/scoring.js` (scoring), `js/painmap.js` (image cards), `js/en.js` (English presentation layer), and `js/data/` (clinical data).
+
+## Optional online data collection
+
+The screening can anonymously store every choice and final result in Supabase. A protected, read-only `admin.html` dashboard supports filtering, record details, and CSV export. See [`DATA_COLLECTION_SETUP.md`](DATA_COLLECTION_SETUP.md) and [`supabase/setup.sql`](supabase/setup.sql).

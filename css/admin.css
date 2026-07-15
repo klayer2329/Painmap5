@@ -1,0 +1,44 @@
+.admin-body{background:var(--court);min-height:100vh;color:var(--ink);font-family:var(--body);}
+.admin-header{max-width:1280px;margin:0 auto;padding:28px 24px 16px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
+.admin-header h1{font-family:var(--display);font-size:34px;margin:4px 0 0;}
+.admin-header .eyebrow{margin:0;}
+.admin-header-actions{display:flex;gap:10px;align-items:center;}
+.admin-main{max-width:1280px;margin:0 auto;padding:0 24px 48px;}
+.admin-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px;}
+.admin-panel h2{font-family:var(--display);margin:0 0 8px;}
+.admin-panel p{color:var(--ink-soft);line-height:1.55;}
+.admin-login{max-width:520px;margin:30px auto;}
+.admin-login form{display:grid;gap:14px;margin-top:20px;}
+.admin-login label,.admin-toolbar label{font-size:12px;font-weight:700;color:var(--ink-soft);display:grid;gap:6px;}
+.admin-login input,.admin-toolbar input,.admin-toolbar select{font:inherit;border:1.5px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:10px 12px;}
+.admin-message{font-size:13px;color:var(--ink-soft);margin:8px 0 0;}
+.admin-message.error{color:var(--red);}
+.admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px;}
+.admin-stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+.admin-stat strong{display:block;font-family:var(--display);font-size:30px;color:var(--orange);}
+.admin-stat span{font-size:12px;color:var(--ink-soft);font-weight:700;}
+.admin-toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap;}
+.admin-toolbar label{min-width:150px;}
+.admin-toolbar .admin-search{flex:1;min-width:220px;}
+.admin-table-wrap{overflow:auto;}
+.admin-table{width:100%;border-collapse:collapse;min-width:880px;font-size:13px;}
+.admin-table th,.admin-table td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;}
+.admin-table th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}
+.admin-table td:last-child{white-space:nowrap;}
+.admin-table button{font:inherit;border:0;background:transparent;color:var(--teal);font-weight:700;cursor:pointer;padding:3px 6px;}
+.admin-badge{display:inline-block;border-radius:5px;padding:3px 7px;font-family:var(--mono);font-size:10.5px;font-weight:700;background:var(--teal-soft);color:var(--teal);}
+.admin-badge.emergency_stop{background:var(--red-soft);color:var(--red);}
+.admin-badge.no_candidate{background:var(--amber-soft);color:var(--orange-dark);}
+.admin-dialog{width:min(900px,calc(100% - 28px));max-height:88vh;border:0;border-radius:12px;padding:0;box-shadow:0 18px 60px rgba(26,37,48,.25);}
+.admin-dialog::backdrop{background:rgba(26,37,48,.52);}
+.admin-dialog-head{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:16px 20px;z-index:1;}
+.admin-dialog-head h2{font-family:var(--display);margin:0;}
+#detailContent{padding:18px 20px 26px;}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+.detail-item{background:var(--court);border-radius:7px;padding:10px 12px;}
+.detail-item span{display:block;color:var(--ink-soft);font-size:10px;text-transform:uppercase;font-weight:700;}
+.detail-item strong{display:block;margin-top:3px;word-break:break-word;}
+.detail-json{margin-top:14px;}
+.detail-json summary{font-weight:700;cursor:pointer;}
+.detail-json pre{white-space:pre-wrap;word-break:break-word;background:#18212b;color:#e8edf1;padding:14px;border-radius:8px;font:12px/1.5 var(--mono);max-height:340px;overflow:auto;}
+@media(max-width:760px){.admin-header{align-items:flex-start;flex-direction:column}.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-toolbar{align-items:stretch}.admin-toolbar label,.admin-toolbar .admin-search{width:100%}.detail-grid{grid-template-columns:1fr}}

@@ -302,6 +302,20 @@ input[type=range]{
 
 .progress-note{ font-size:12px; color:var(--ink-soft); margin-top:-14px; margin-bottom:22px; }
 
+/* ---------- Anonymous data consent / save status ---------- */
+.consent-card{border-left:4px solid var(--teal);background:var(--teal-soft);}
+.consent-title{margin:0 0 7px;font-weight:700;color:var(--teal);}
+.consent-copy{margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;line-height:1.55;}
+.consent-control{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;font-weight:600;cursor:pointer;}
+.consent-control input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--teal);flex:none;}
+.consent-details{margin-top:12px;font-size:12px;color:var(--ink-soft);}
+.consent-details summary{cursor:pointer;font-weight:700;color:var(--ink);}
+.consent-details p{margin:7px 0 0;line-height:1.55;}
+.data-save-status{margin:18px 0 0;padding:11px 13px;border-radius:7px;background:var(--court);border:1px solid var(--line);font-size:12.5px;color:var(--ink-soft);}
+.data-save-status.success{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);font-weight:700;}
+.data-save-status.warning{background:var(--amber-soft);border-color:var(--amber);color:var(--orange-dark);}
+.data-save-status.error{background:var(--red-soft);border-color:var(--red);color:var(--red);}
+
 /* ---------- Special test review screen ---------- */
 .test-result-row{
   display:flex; flex-direction:column; gap:12px;
