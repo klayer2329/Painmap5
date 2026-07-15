@@ -4,7 +4,7 @@
 
 const state = {
   answers: {},
-  mode: null,           // 'acute' | 'chronic'
+  mode: null,           // 'acute' | 'chronic' | 'unknown'
   qIndex: 0,             // 主问卷题号指针
   aIndex: 0,             // additional questions 指针
   yIndex: 0,             // yes/no questions 指针
@@ -274,11 +274,12 @@ function showModeSelect() {
   render(`
     <p class="eyebrow">Q2 · 病史问卷</p>
     <h1 class="title">是否有明确的一次受伤事件导致疼痛开始？</h1>
-    <p class="subtitle">For example, an ankle roll, awkward landing, or landing on another player's foot where you can identify the exact moment symptoms began.</p>
+    <p class="subtitle">For example, an ankle roll, awkward landing, or landing on another player's foot where you can identify the exact moment symptoms began. If you are unsure, both acute and overuse conditions will remain eligible.</p>
     <div class="card">
       <div class="options">
         <button class="opt" data-v="acute"><span class="num">1</span><span>有 — 能明确指出受伤的那一刻（急性）</span></button>
         <button class="opt" data-v="chronic"><span class="num">2</span><span>没有 — 是训练后逐渐出现的疼痛（慢性 / 劳损）</span></button>
+        <button class="opt" data-v="unknown"><span class="num">3</span><span>不知道 / 不确定</span></button>
       </div>
     </div>
     <div class="btn-row"><button class="btn btn-secondary" id="backBtn">← 返回</button></div>
@@ -287,6 +288,7 @@ function showModeSelect() {
   document.querySelectorAll(".opt").forEach((el) => {
     el.onclick = () => {
       state.mode = el.dataset.v;
+      state.answers.onset_event = el.dataset.v;
       state.qIndex = 0;
       showQuestionnaireStep();
     };
@@ -305,7 +307,7 @@ function showQuestionnaireStep() {
   const qs = currentQuestionSet();
   if (state.qIndex >= qs.length) {
     // chronic 追加：是否需要 standing_pain
-    if (state.mode === "chronic" && state.answers.pain_action === "静止休息" && state.answers.standing_pain === undefined) {
+    if (state.mode !== "acute" && state.answers.pain_action === "静止休息" && state.answers.standing_pain === undefined) {
       return showStandingPainStep();
     }
     return showPainMapPrimary();
@@ -336,7 +338,7 @@ function renderQuestion(q, onNext, onBack) {
   const currentVal = state.answers[q.field];
 
   render(`
-    <p class="eyebrow">${state.mode === "acute" ? "Acute questionnaire" : state.mode === "chronic" ? "Overuse questionnaire" : "Questionnaire"}</p>
+    <p class="eyebrow">${state.mode === "acute" ? "Acute questionnaire" : state.mode === "chronic" ? "Overuse questionnaire" : "Onset-uncertain questionnaire"}</p>
     <h1 class="title">${q.title}</h1>
     ${multi ? progressNote("Select all that apply") : ""}
     <div class="card">
@@ -416,7 +418,7 @@ function showPainMapPrimary() {
     };
   });
   document.getElementById("backBtn").onclick = () => {
-    if (state.mode === "chronic" && state.answers.pain_action === "静止休息") showStandingPainStep();
+    if (state.mode !== "acute" && state.answers.pain_action === "静止休息") showStandingPainStep();
     else { state.qIndex = currentQuestionSet().length - 1; showQuestionnaireStep(); }
   };
   document.getElementById("nextBtn").onclick = () => {
@@ -635,7 +637,7 @@ function locationExcludedConditions(conditionSet) {
 // 11. RESULTS
 // ---------------------------------------------------------
 function computeResults() {
-  const conditionSet = state.mode === "acute" ? ACUTE_CONDITIONS : CHRONIC_CONDITIONS;
+  const conditionSet = conditionSetForMode(state.mode);
   const overrides = state.mode === "acute" ? ACUTE_OVERRIDES : [];
   const { scores, supporting, locationScores } = computeBaseScores(conditionSet, state.answers, state.mode);
 
@@ -647,6 +649,29 @@ function computeResults() {
 
   const ranking = rankConditions(scores, conditionSet, 3, locationScores);
   return { scores, supporting, locationScores, emergency, conditionSet, ranking };
+}
+
+function conditionSetForMode(mode) {
+  if (mode === "acute") return ACUTE_CONDITIONS;
+  if (mode === "chronic") return CHRONIC_CONDITIONS;
+
+  // An uncertain onset must not be silently classified as overuse. Keep both
+  // libraries eligible, merging the few shared diagnoses into one candidate.
+  const combined = {};
+  [ACUTE_CONDITIONS, CHRONIC_CONDITIONS].forEach((library) => {
+    Object.entries(library).forEach(([key, condition]) => {
+      if (!combined[key]) {
+        combined[key] = { ...condition, rules: [...(condition.rules || [])] };
+        return;
+      }
+      combined[key] = {
+        ...combined[key],
+        ...condition,
+        rules: [...(combined[key].rules || []), ...(condition.rules || [])],
+      };
+    });
+  });
+  return combined;
 }
 
 // ---------------- 11. SPECIAL TESTS RE-SCORING ----------------

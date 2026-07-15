@@ -35,6 +35,10 @@
     return value ? new Date(value).toLocaleString() : "—";
   }
 
+  function modeText(record) {
+    return record.mode || (record.answers?.onset_event === "unknown" ? "Not sure" : "—");
+  }
+
   function showLogin(message = "") {
     setupPanel.hidden = true;
     dashboardPanel.hidden = true;
@@ -89,7 +93,8 @@
     const outcome = document.getElementById("outcomeFilter").value;
     const search = document.getElementById("searchFilter").value.trim().toLowerCase();
     filteredRecords = records.filter((record) => {
-      if (mode && record.mode !== mode) return false;
+      if (mode === "unknown" && record.answers?.onset_event !== "unknown") return false;
+      if (mode && mode !== "unknown" && record.mode !== mode) return false;
       if (outcome && record.outcome !== outcome) return false;
       if (!search) return true;
       const top = topResult(record);
@@ -109,7 +114,7 @@
       const score = top?.score ?? top?.scorePct ?? "—";
       return `<tr>
         <td>${escapeHtml(dateText(record.completed_at || record.created_at))}</td>
-        <td>${escapeHtml(record.mode || "—")}</td>
+        <td>${escapeHtml(modeText(record))}</td>
         <td>${escapeHtml(location)}</td>
         <td><span class="admin-badge ${escapeHtml(record.outcome)}">${escapeHtml(record.outcome)}</span></td>
         <td>${escapeHtml(top?.nameEn || top?.key || "—")}</td>
@@ -133,7 +138,7 @@
         <div class="detail-item"><span>Completed</span><strong>${escapeHtml(dateText(record.completed_at))}</strong></div>
         <div class="detail-item"><span>Anonymous participant</span><strong>${escapeHtml(record.participant_id)}</strong></div>
         <div class="detail-item"><span>Session</span><strong>${escapeHtml(record.session_id)}</strong></div>
-        <div class="detail-item"><span>Mode</span><strong>${escapeHtml(record.mode || "—")}</strong></div>
+        <div class="detail-item"><span>Mode</span><strong>${escapeHtml(modeText(record))}</strong></div>
         <div class="detail-item"><span>Outcome</span><strong>${escapeHtml(record.outcome)}</strong></div>
         <div class="detail-item"><span>Location</span><strong>${escapeHtml([record.primary_location, record.secondary_location].filter(Boolean).join(" · ") || "—")}</strong></div>
         <div class="detail-item"><span>Top result</span><strong>${escapeHtml(top?.nameEn || top?.key || "—")}</strong></div>

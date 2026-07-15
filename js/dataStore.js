@@ -70,7 +70,9 @@
       consent_version: CONSENT_VERSION,
       app_version: APP_VERSION,
       outcome,
-      mode: state.mode || null,
+      // The current database constraint accepts acute/chronic only. Preserve
+      // uncertain onset in answers.onset_event and store a neutral SQL value.
+      mode: ["acute", "chronic"].includes(state.mode) ? state.mode : null,
       primary_location: state.answers?.primary_location || null,
       secondary_location: state.answers?.secondary_location || null,
       answers: cleanJson(state.answers),
