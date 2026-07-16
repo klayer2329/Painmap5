@@ -12,7 +12,7 @@ python3 -m http.server 8080
 
 ## Flow
 
-Warning-sign checklist → pain VAS → acute/overuse questionnaire → image-based pain-location selection → additional questions → functional tests → score breakdown → special tests → Top 3 results and rehabilitation guidance.
+Chinese/English selection → warning-sign checklist → pain VAS → acute/overuse questionnaire → image-based pain-location selection → additional questions → functional tests → score breakdown → special tests → Top 3 results and rehabilitation guidance.
 
 ## Current behavior
 

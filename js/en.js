@@ -1,6 +1,91 @@
 // English presentation layer. Internal answer tokens remain unchanged so the
 // clinical rule tables stay compatible with the Chinese source specification.
 (function () {
+  if (window.HOOPFOOT_LANG === "zh") {
+    const zhPhraseMap = {
+      "Basketball Foot &amp; Ankle Screening":"篮球足踝伤病筛查",
+      "Basketball Foot &amp; Ankle Injury Screening System":"篮球足踝伤病筛查系统",
+      "A preliminary risk-screening tool for basketball athletes ages 12–18 with foot or ankle pain, sprains, landing injuries, running or jumping pain, or gradual training-related symptoms.":"面向12–18岁篮球运动员的足踝伤病初步风险筛查工具，适用于足踝疼痛、扭伤、落地受伤、跑跳疼痛或逐渐出现的训练相关症状。",
+      "What this tool can do":"本工具可以",
+      "Screen injury risk and rank possible conditions":"筛查伤病风险并排列可能伤病",
+      "Guide simple functional screening tests":"指导完成简单的功能筛查测试",
+      "Help identify when prompt medical assessment is appropriate":"帮助判断何时应尽快接受医疗评估",
+      "What this tool cannot do":"本工具不能",
+      "Provide a formal medical diagnosis":"提供正式医学诊断",
+      "Replace an examination by a qualified clinician":"代替专业医务人员的检查",
+      "Replace imaging such as X-ray, MRI, or CT":"代替X光、MRI或CT等影像学检查",
+      "Anonymous research data":"匿名研究数据",
+      "With permission, this screening will anonymously save every answer, pain location, functional and special-test selection, calculated score, and final ranking. No name, email, phone number, or account is collected.":"经你同意后，本筛查会匿名保存所有答案、疼痛位置、功能与特殊检查选择、计算分数和最终排序。不会收集姓名、邮箱、电话号码或账户信息。",
+      "I agree to anonymous storage of this screening and its results.":"我同意匿名保存本次筛查及其结果。",
+      "What is stored?":"会保存什么？",
+      "Question choices, pain-map selections, test findings, scores, result ranking, anonymous browser ID, and completion time. You can continue without saving.":"问题选项、疼痛位置、检查结果、分数、结果排序、匿名浏览器编号和完成时间。你也可以选择不保存并继续。",
+      "Continue without saving":"不保存并继续",
+      "Start and save anonymously":"开始并匿名保存",
+      "For example, an ankle roll, awkward landing, or landing on another player's foot where you can identify the exact moment symptoms began. If you are unsure, both acute and overuse conditions will remain eligible.":"例如崴脚、落地不稳或踩到他人脚上，并且能够指出症状开始的准确时刻。如果不确定，系统会同时保留急性与劳损类候选伤病。",
+      "Acute questionnaire":"急性伤病问卷",
+      "Overuse questionnaire":"慢性／劳损问卷",
+      "Onset-uncertain questionnaire":"起病方式不确定问卷",
+      "Select all that apply":"可多选",
+      "Basketball functional test":"篮球功能测试",
+      "Stop immediately if this causes severe pain.":"如果动作引起剧烈疼痛，请立即停止。",
+      "Score breakdown":"评分明细",
+      "No candidate earned a positive feature score":"没有候选伤病获得有效特征分",
+      "Selected location:":"所选位置：",
+      "The broad pain region matched the library, but the exact location and the remaining questionnaire features did not add points to those candidates. The system will not invent an unrelated result.":"主要疼痛区域与伤病库匹配，但具体位置和其他问卷特征没有为候选伤病增加分数。系统不会生成无关结果。",
+      "No condition in the current library uses this broad pain region. The first location selection is a hard filter, so unrelated conditions were removed.":"当前伤病库中没有伤病使用这个主要疼痛区域。第一次位置选择属于硬筛选，因此无关伤病已被排除。",
+      "If the marker was inaccurate, choose the location again. If the location is accurate and symptoms persist, arrange a sports-medicine or foot-and-ankle assessment.":"如果标记位置不准确，请重新选择。如果位置准确但症状持续，请接受运动医学或足踝专科评估。",
+      "Back to functional tests":"返回功能测试",
+      "Change pain location":"修改疼痛位置",
+      "Conditions with a positive score":"获得有效分数的伤病",
+      "The first, broad pain region is a hard filter. The second, exact location does not remove a condition; it determines the 40-point location component. Other questionnaire features contribute the remaining 60 points.":"第一次选择的主要疼痛区域是硬筛选。第二次具体位置不会排除伤病，而是决定40分的位置部分；其他问卷特征贡献剩余60分。",
+      "Combined scoring factors":"综合评分因素",
+      "Next: special tests":"下一步：特殊检查",
+      "Special tests":"特殊检查",
+      "Perform additional screening tests":"完成进一步筛查测试",
+      "If safe and practical, complete these tests with a clinician or qualified trainer. Record positive or negative findings to refine the ranking. You may leave every test untested.":"在安全且可行的情况下，请在医务人员或合格教练指导下完成这些检查。记录阳性或阴性结果可用于微调排序，也可以全部选择未测试。",
+      "How test findings affect the score":"检查结果如何影响分数",
+      "A positive finding makes a small adjustment (+10%); a negative finding makes a smaller adjustment (−5%). Scores remain capped at 100. These screens refine the ranking but cannot diagnose or rule out a condition.":"阳性结果使分数小幅上调（+10%）；阴性结果使分数小幅下调（−5%）。最高仍为100分。这些检查只能微调排序，不能确诊或排除伤病。",
+      "Ranked candidate · base feature score":"排序候选 · 基础特征分",
+      "Reference test":"参考检查",
+      "How to perform":"如何操作",
+      "Positive finding":"阳性表现",
+      "Negative finding":"阴性表现",
+      "The familiar symptoms are not reproduced and there is no meaningful difference from the uninjured side.":"没有诱发熟悉症状，与健侧相比也没有明显差异。",
+      "Positive":"阳性",
+      "Negative":"阴性",
+      "Not tested":"未测试",
+      "Generate final report":"生成最终报告",
+      "Screening report · Final Report":"筛查报告 · 最终结果",
+      "The score is an absolute questionnaire feature score: 40 points for the selected pain location and 60 points for other compatible features. It is not a probability or diagnosis.":"该分数是问卷特征绝对分：所选疼痛位置占40分，其他匹配特征占60分。它不是概率，也不是诊断。",
+      "Selected pain location":"所选疼痛位置",
+      "Feature score":"特征分",
+      "Ranked #":"排序第",
+      "Supporting factors":"支持因素",
+      "Suggested clinical tests":"建议临床检查",
+      "General clinical examination":"一般临床检查",
+      "Rehabilitation / training guidance":"康复／训练调整建议",
+      "When the joint is stable and movement has been medically cleared, pain-free muscle contractions can help reduce swelling.":"在关节稳定且经过医疗评估允许活动的情况下，无痛肌肉收缩有助于减轻肿胀。",
+      "Conditions excluded because the pain location did not match":"因疼痛位置不匹配而排除的伤病",
+      "None":"无",
+      "Seek prompt medical assessment":"尽快接受医疗评估",
+      "Next steps":"下一步建议",
+      "Restart screening":"重新开始筛查",
+      "Print / save report":"打印／保存报告",
+      "points":"分",
+      "Back":"返回",
+      "Next":"下一步"
+    };
+    window.translateUi = function (html) {
+      let out = html;
+      Object.entries(zhPhraseMap).sort((a, b) => b[0].length - a[0].length).forEach(([english, chinese]) => {
+        out = out.split(english).join(chinese);
+      });
+      return out;
+    };
+    window.translateFactorDesc = function (desc) { return desc || "匹配的评分因素"; };
+    return;
+  }
+
   const questionText = {
     mechanism:["How was your foot loaded when the injury happened?",["Inversion","Eversion","Foot planted while body rotated","Landing from a jump","Forced ankle dorsiflexion","Not sure"]],
     contact:["What happened at the time of injury?",["Body contact","Landed on another player's foot","No contact"]],

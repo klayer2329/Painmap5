@@ -3,7 +3,7 @@
 // ============================================================
 
 const state = {
-  answers: {},
+  answers: { language: window.HOOPFOOT_LANG },
   mode: null,           // 'acute' | 'chronic' | 'unknown'
   qIndex: 0,             // 主问卷题号指针
   aIndex: 0,             // additional questions 指针
@@ -40,7 +40,7 @@ function progressNote(text) {
 
 function dataSaveStatusHtml() {
   if (!state.dataConsent) return "";
-  return `<div class="data-save-status" id="dataSaveStatus" role="status">Preparing anonymous data record…</div>`;
+  return `<div class="data-save-status" id="dataSaveStatus" role="status">${uiText("Preparing anonymous data record…", "正在准备匿名数据记录…")}</div>`;
 }
 
 function setDataSaveStatus(message, type = "") {
@@ -55,10 +55,10 @@ function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [
   if (state._submissionPromise) return;
   const store = window.ScreeningDataStore;
   if (!store?.isConfigured?.()) {
-    setDataSaveStatus("Anonymous data storage is not connected yet.", "warning");
+    setDataSaveStatus(uiText("Anonymous data storage is not connected yet.", "匿名数据存储尚未连接。"), "warning");
     return;
   }
-  setDataSaveStatus("Saving this anonymous screening record…");
+  setDataSaveStatus(uiText("Saving this anonymous screening record…", "正在保存本次匿名筛查记录…"));
   state._submissionPromise = store.submitScreening({
     state,
     outcome,
@@ -75,13 +75,13 @@ function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [
     emergency,
   }).then((result) => {
     if (result.status === "saved" || result.status === "already-saved") {
-      setDataSaveStatus(`Anonymous screening saved · Record ${result.id.slice(0, 8)}`, "success");
+      setDataSaveStatus(uiText(`Anonymous screening saved · Record ${result.id.slice(0, 8)}`, `匿名筛查已保存 · 记录 ${result.id.slice(0, 8)}`), "success");
     } else if (result.status === "not-configured") {
-      setDataSaveStatus("Anonymous data storage is not connected yet.", "warning");
+      setDataSaveStatus(uiText("Anonymous data storage is not connected yet.", "匿名数据存储尚未连接。"), "warning");
     }
   }).catch((error) => {
     console.error("Unable to save anonymous screening", error);
-    setDataSaveStatus("The screening report is complete, but the anonymous record could not be saved.", "error");
+    setDataSaveStatus(uiText("The screening report is complete, but the anonymous record could not be saved.", "筛查报告已经完成，但匿名记录未能保存。"), "error");
     state._submissionPromise = null;
   });
 }
@@ -141,6 +141,7 @@ function showWelcome() {
     <div class="btn-row">
       <button class="btn btn-secondary" id="privateStartBtn">Continue without saving</button>
       <button class="btn btn-primary" id="startBtn" ${state.dataConsent ? "" : "disabled"}>Start and save anonymously →</button>
+      <button class="btn btn-secondary" id="languageBtn">${uiText("Change language", "更改语言")}</button>
     </div>
   `);
   const consent = document.getElementById("dataConsent");
@@ -151,6 +152,7 @@ function showWelcome() {
   };
   document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showRedFlagChecklist(); };
   start.onclick = () => { state.dataConsent = true; showRedFlagChecklist(); };
+  document.getElementById("languageBtn").onclick = window.restartWithLanguageChoice;
 }
 
 // ---------------------------------------------------------
@@ -177,11 +179,11 @@ function showRedFlagVas() {
     </div>
   `);
   const descFor = (v) => {
-    if (v == 0) return "0 = No pain";
-    if (v <= 3) return "Mild pain";
-    if (v <= 6) return "Moderate pain";
-    if (v <= 9) return "Severe pain";
-    return "10 = Unbearable pain";
+    if (v == 0) return uiText("0 = No pain", "0 = 完全不痛");
+    if (v <= 3) return uiText("Mild pain", "轻微疼痛");
+    if (v <= 6) return uiText("Moderate pain", "中等疼痛");
+    if (v <= 9) return uiText("Severe pain", "严重疼痛");
+    return uiText("10 = Unbearable pain", "10 = 无法忍受的疼痛");
   };
   const numEl = document.getElementById("vasNum");
   const descEl = document.getElementById("vasDesc");
@@ -630,7 +632,7 @@ function sourceClass(source) {
 function locationExcludedConditions(conditionSet) {
   return Object.entries(conditionSet)
     .filter(([, condition]) => !locationEligibilityMatches(state.answers, condition))
-    .map(([, condition]) => condition.nameEn);
+    .map(([, condition]) => uiText(condition.nameEn, condition.nameZh));
 }
 
 // ---------------------------------------------------------
@@ -781,15 +783,15 @@ function showSpecialTestScreen() {
 function recommendationText(ranking) {
   const top = ranking[0];
   if (!top) {
-    return { urgent: false, text: "No strong high-risk pattern was identified. Monitor your symptoms and seek a sports-medicine or orthopedic assessment if pain persists beyond one week, worsens, or is accompanied by swelling or instability." };
+    return { urgent: false, text: uiText("No strong high-risk pattern was identified. Monitor your symptoms and seek a sports-medicine or orthopedic assessment if pain persists beyond one week, worsens, or is accompanied by swelling or instability.", "目前没有发现明显的高风险模式。请继续观察；如果疼痛超过一周、逐渐加重，或伴随肿胀和不稳定，应接受运动医学或骨科评估。") };
   }
   if (top.scorePct >= 70 && /fracture|骨折|Lisfranc/i.test(top.key + top.category)) {
-    return { urgent: true, text: `Your answers are consistent with ${top.nameEn}. Because a fracture or major structural injury is possible, seek prompt medical assessment and appropriate imaging. Avoid weight-bearing training until cleared.` };
+    return { urgent: true, text: uiText(`Your answers are consistent with ${top.nameEn}. Because a fracture or major structural injury is possible, seek prompt medical assessment and appropriate imaging. Avoid weight-bearing training until cleared.`, `你的答案与${top.nameZh}较为一致。由于可能存在骨折或严重结构损伤，请尽快接受医疗评估和适当影像检查；在获准前避免负重训练。`) };
   }
   if (top.scorePct >= 70) {
-    return { urgent: false, text: `Your answers most closely match ${top.nameEn}. Reduce painful movements and training load, and arrange a sports-medicine or orthopedic assessment. The suggested tests below can support that clinical evaluation.` };
+    return { urgent: false, text: uiText(`Your answers most closely match ${top.nameEn}. Reduce painful movements and training load, and arrange a sports-medicine or orthopedic assessment. The suggested tests below can support that clinical evaluation.`, `你的答案与${top.nameZh}最为接近。请减少引起疼痛的动作和训练负荷，并安排运动医学或骨科评估；下方建议检查可为临床评估提供参考。`) };
   }
-  return { urgent: false, text: "The pattern is not highly specific and may fit several conditions. Review the top possibilities with a clinician or qualified team medical professional before returning to full training." };
+  return { urgent: false, text: uiText("The pattern is not highly specific and may fit several conditions. Review the top possibilities with a clinician or qualified team medical professional before returning to full training.", "当前症状模式不够特异，可能符合多种伤病。在恢复完整训练前，请与医生或合格队医一起评估排名靠前的可能伤病。") };
 }
 
 function testAdjustmentNote(key) {
@@ -800,9 +802,9 @@ function testAdjustmentNote(key) {
   const negCount = results.filter((r) => r === "negative").length;
   if (!posCount && !negCount) return "";
   const parts = [];
-  if (posCount) parts.push(`${posCount} positive finding${posCount > 1 ? "s" : ""} (+10% each)`);
-  if (negCount) parts.push(`${negCount} negative finding${negCount > 1 ? "s" : ""} (−5% each)`);
-  return `<p class="test-adjust-note">Score adjusted using special-test findings: ${parts.join(", ")}</p>`;
+  if (posCount) parts.push(uiText(`${posCount} positive finding${posCount > 1 ? "s" : ""} (+10% each)`, `${posCount}项阳性（每项+10%）`));
+  if (negCount) parts.push(uiText(`${negCount} negative finding${negCount > 1 ? "s" : ""} (−5% each)`, `${negCount}项阴性（每项−5%）`));
+  return `<p class="test-adjust-note">${uiText("Score adjusted using special-test findings", "已根据特殊检查结果调整分数")}：${parts.join(uiText(", ", "，"))}</p>`;
 }
 
 function showResults() {
@@ -840,7 +842,7 @@ function showResults() {
 
   render(`
     <p class="eyebrow">Screening report · Final Report</p>
-    <h1 class="title">Ranked possibilities (Top ${ranking.length || 0})</h1>
+    <h1 class="title">${uiText(`Ranked possibilities (Top ${ranking.length || 0})`, `候选伤病排序（前${ranking.length || 0}名）`)}</h1>
     <p class="subtitle">The score is an absolute questionnaire feature score: 40 points for the selected pain location and 60 points for other compatible features. It is not a probability or diagnosis.</p>
     <div class="screening-summary"><strong>Selected pain location</strong><span>${selectedLocation}</span></div>
 
@@ -864,7 +866,7 @@ function showResults() {
         <div class="section-label">Suggested clinical tests</div>
         <div>${(SPECIAL_TESTS[r.key] || SPECIAL_TEST_FALLBACK).map((t) => {
           const stepsText = Array.isArray(t.steps) ? t.steps.join(" → ") : "";
-          const tip = (stepsText + (stepsText ? " → " : "") + "Positive: " + t.positive).replace(/"/g, "&quot;");
+          const tip = (stepsText + (stepsText ? " → " : "") + uiText("Positive: ", "阳性表现：") + t.positive).replace(/"/g, "&quot;");
           return `<span class="test-chip" title="${tip}">${t.name}</span>`;
         }).join("") || "<span class='test-chip'>General clinical examination</span>"}</div>
         ${testAdjustmentNote(r.key)}
