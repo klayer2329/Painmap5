@@ -20,6 +20,7 @@ Chinese/English selection → warning-sign checklist → pain VAS → acute/over
 - The injury-history screen, state, and score multiplier have been removed.
 - Seven illustrated region cards replace the old view-tab/hotspot selector; exact location, shape, and depth follow.
 - Each condition's normalized base score is 40% location match and 60% other questionnaire features. Global rules, urgent overrides, and special-test adjustments are applied afterward.
+- Formal Top 3 candidates require location score > 0, other-feature score >= 15/60, at least two distinct supporting fields, and total score >= 35/100. Below-threshold location matches are shown separately and cannot proceed to special tests.
 - Achilles tendon rupture participates normally in acute Top 3 ranking.
 - User-visible questions, controls, score explanations, test guidance, rehabilitation guidance, results, and documentation are presented in English. Internal answer tokens remain compatible with the source clinical rules.
 

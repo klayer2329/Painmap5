@@ -121,6 +121,9 @@ function computeBaseScores(conditionSet, answers, mode) {
   const scores = {};
   const supporting = {};
   const locationScores = {};
+  const otherScores = {};
+  const otherFieldCounts = {};
+  const evidenceEligibility = {};
   Object.entries(conditionSet).forEach(([key, cond]) => {
     if (!locationEligibilityMatches(answers, cond)) return;
     let total = 0;
@@ -129,6 +132,7 @@ function computeBaseScores(conditionSet, answers, mode) {
     let otherRaw = 0;
     let locationHit = false;
     let otherHit = false;
+    const matchedOtherFields = new Set();
     const conditionRules = cond.rules || [];
     const globalFeatureRules = buildGlobalRules(mode).flatMap((globalRule) =>
       globalRule.effects
@@ -140,7 +144,13 @@ function computeBaseScores(conditionSet, answers, mode) {
       if (ruleHits(answers, rule)) {
         const isLocation = rule.when.some((c) => c.field === "primary_location" || c.field === "secondary_location");
         if (isLocation) { locationRaw += rule.points; locationHit = true; }
-        else { otherRaw += rule.points; otherHit = true; }
+        else {
+          otherRaw += rule.points;
+          otherHit = true;
+          rule.when.forEach((condition) => {
+            if (condition.field !== "primary_location" && condition.field !== "secondary_location") matchedOtherFields.add(condition.field);
+          });
+        }
       }
     });
     const locationRules = conditionRules.filter((r) => r.when.some((c) => c.field === "primary_location" || c.field === "secondary_location"));
@@ -154,9 +164,12 @@ function computeBaseScores(conditionSet, answers, mode) {
     if (otherHit) factors.push({ points: Math.round(otherScore * 10) / 10, desc: `其他问卷特征 ${otherRaw}/${maxOther}（基础分权重 60%）`, source: "other" });
     scores[key] = total;
     locationScores[key] = locationScore;
+    otherScores[key] = otherScore;
+    otherFieldCounts[key] = matchedOtherFields.size;
+    evidenceEligibility[key] = locationScore > 0 && otherScore >= 15 && matchedOtherFields.size >= 2 && total >= 35;
     supporting[key] = factors;
   });
-  return { scores, supporting, locationScores };
+  return { scores, supporting, locationScores, otherScores, otherFieldCounts, evidenceEligibility };
 }
 
 // ---------------- 全局规则（Part 4） ----------------
@@ -449,9 +462,9 @@ function applyOverrides(scores, answers, overrideList, supporting) {
 }
 
 // ---------------- Ranking ----------------
-function rankConditions(scores, conditionSet, topN = 3, locationScores = null) {
+function rankConditions(scores, conditionSet, topN = 3, locationScores = null, evidenceEligibility = null) {
   const visible = Object.entries(scores).filter(([key]) =>
-    !conditionSet[key].hidden && (!locationScores || (locationScores[key] || 0) > 0)
+    !conditionSet[key].hidden && (!locationScores || (locationScores[key] || 0) > 0) && (!evidenceEligibility || evidenceEligibility[key])
   );
   const sorted = visible.sort((a, b) => b[1] - a[1]);
   const top = sorted.slice(0, topN).filter(([, sc]) => sc > 0);
@@ -464,9 +477,9 @@ function rankConditions(scores, conditionSet, topN = 3, locationScores = null) {
 }
 
 // 列出所有分数 > 0 的伤病（不限 Top N），用于"加分透明度"页面
-function listAllScored(scores, conditionSet, locationScores = null) {
+function listAllScored(scores, conditionSet, locationScores = null, evidenceEligibility = null) {
   const visible = Object.entries(scores).filter(([key, sc]) =>
-    !conditionSet[key].hidden && sc > 0 && (!locationScores || (locationScores[key] || 0) > 0)
+    !conditionSet[key].hidden && sc > 0 && (!locationScores || (locationScores[key] || 0) > 0) && (!evidenceEligibility || evidenceEligibility[key])
   );
   const sorted = visible.sort((a, b) => b[1] - a[1]);
   return sorted.map(([key, score]) => ({
@@ -474,6 +487,22 @@ function listAllScored(scores, conditionSet, locationScores = null) {
     score: Math.round(score * 10) / 10,
     ...conditionSet[key],
   }));
+}
+
+function listInsufficientEvidence(scores, conditionSet, locationScores, otherScores, otherFieldCounts, evidenceEligibility) {
+  return Object.entries(scores)
+    .filter(([key, score]) =>
+      !conditionSet[key].hidden && score > 0 && (locationScores[key] || 0) > 0 && !evidenceEligibility[key]
+    )
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, score]) => ({
+      key,
+      score: Math.round(score * 10) / 10,
+      locationScore: Math.round((locationScores[key] || 0) * 10) / 10,
+      otherScore: Math.round((otherScores[key] || 0) * 10) / 10,
+      otherFieldCount: otherFieldCounts[key] || 0,
+      ...conditionSet[key],
+    }));
 }
 
 function buildSupportingFactorText(entry) {

@@ -558,22 +558,25 @@ function showScoreBreakdown() {
     return;
   }
 
-  const { scores, supporting, conditionSet, locationScores } = result;
-  const all = listAllScored(scores, conditionSet, locationScores);
+  const { scores, supporting, conditionSet, locationScores, otherScores, otherFieldCounts, evidenceEligibility } = result;
+  const all = listAllScored(scores, conditionSet, locationScores, evidenceEligibility);
+  const insufficient = listInsufficientEvidence(scores, conditionSet, locationScores, otherScores, otherFieldCounts, evidenceEligibility);
 
   if (all.length === 0) {
     const selectedLocation = [state.answers.primary_location, state.answers.secondary_location].filter(Boolean).join(" · ");
     const hasMainRegionCandidates = Object.keys(scores).length > 0;
     render(`
       <p class="eyebrow">Score breakdown</p>
-      <h1 class="title">No candidate earned a positive feature score</h1>
+      <h1 class="title">${uiText("No condition met the minimum evidence threshold", "没有伤病达到最低证据门槛")}</h1>
       <p class="subtitle">Selected location: ${selectedLocation}</p>
       <div class="card no-match-card">
         <p>${hasMainRegionCandidates
-          ? "The broad pain region matched the library, but the exact location and the remaining questionnaire features did not add points to those candidates. The system will not invent an unrelated result."
+          ? uiText("One or more conditions matched the pain region, but none had enough supporting questionnaire evidence for the formal Top 3.", "一个或多个伤病与疼痛位置相符，但其他问卷证据不足，因此不进入正式Top 3。")
           : "No condition in the current library uses this broad pain region. The first location selection is a hard filter, so unrelated conditions were removed."}</p>
+        ${hasMainRegionCandidates ? `<p>${uiText("Required: location score above 0, other-feature score at least 15/60, at least two different supporting fields, and total score at least 35/100.", "进入正式候选需要：位置分大于0、其他特征至少15/60、至少命中2个不同特征维度，并且总分至少35/100。")}</p>` : ""}
         <p>If the marker was inaccurate, choose the location again. If the location is accurate and symptoms persist, arrange a sports-medicine or foot-and-ankle assessment.</p>
       </div>
+      ${renderInsufficientEvidence(insufficient)}
       ${dataSaveStatusHtml()}
       <div class="btn-row">
         <button class="btn btn-secondary" id="backBtn">← Back to functional tests</button>
@@ -589,7 +592,7 @@ function showScoreBreakdown() {
   render(`
     <p class="eyebrow">Score breakdown</p>
     <h1 class="title">Conditions with a positive score (${all.length})</h1>
-    <p class="subtitle">The first, broad pain region is a hard filter. The second, exact location does not remove a condition; it determines the 40-point location component. Other questionnaire features contribute the remaining 60 points.</p>
+    <p class="subtitle">${uiText("The broad region is a hard filter. Formal candidates also require other-feature score ≥15/60, at least two supporting fields, and total score ≥35/100.", "主要区域是硬筛选。正式候选还必须满足：其他特征≥15/60、至少2个支持维度、总分≥35/100。")}</p>
 
     ${all.map((r, i) => `
       <div class="card breakdown-card">
@@ -611,6 +614,8 @@ function showScoreBreakdown() {
       </div>
     `).join("")}
 
+    ${renderInsufficientEvidence(insufficient)}
+
     <div class="btn-row">
       <button class="btn btn-secondary" id="backBtn">← Back to functional tests</button>
       <button class="btn btn-primary" id="nextBtn">Next: special tests →</button>
@@ -619,6 +624,18 @@ function showScoreBreakdown() {
 
   document.getElementById("backBtn").onclick = () => { state.fIndex = FUNCTIONAL_TESTS.length - 1; showFunctionalStep(); };
   document.getElementById("nextBtn").onclick = showSpecialTestScreen;
+}
+
+function renderInsufficientEvidence(items) {
+  if (!items.length) return "";
+  return `
+    <details class="location-exclusions evidence-insufficient">
+      <summary>${uiText(`Location-compatible but below the evidence threshold (${items.length})`, `位置相符但证据不足（${items.length}）`)}</summary>
+      <p>${uiText("These are not formal candidates and will not proceed to special tests.", "以下伤病不是正式候选，也不会进入特殊检查。")}</p>
+      <ul class="factor-list">
+        ${items.map((item) => `<li><strong>${uiText(item.nameEn, item.nameZh)}</strong> · ${uiText("location", "位置")} ${item.locationScore}/40 · ${uiText("other features", "其他特征")} ${item.otherScore}/60 · ${uiText("supporting fields", "支持维度")} ${item.otherFieldCount} · ${uiText("total", "总分")} ${item.score}/100</li>`).join("")}
+      </ul>
+    </details>`;
 }
 
 function sourceClass(source) {
@@ -641,7 +658,7 @@ function locationExcludedConditions(conditionSet) {
 function computeResults() {
   const conditionSet = conditionSetForMode(state.mode);
   const overrides = state.mode === "acute" ? ACUTE_OVERRIDES : [];
-  const { scores, supporting, locationScores } = computeBaseScores(conditionSet, state.answers, state.mode);
+  const { scores, supporting, locationScores, otherScores, otherFieldCounts, evidenceEligibility } = computeBaseScores(conditionSet, state.answers, state.mode);
 
   let emergency = false;
   if (state.mode === "acute") {
@@ -649,8 +666,8 @@ function computeResults() {
     emergency = overrides.some((o) => o.emergency && o.when(state.answers));
   }
 
-  const ranking = rankConditions(scores, conditionSet, 3, locationScores);
-  return { scores, supporting, locationScores, emergency, conditionSet, ranking };
+  const ranking = rankConditions(scores, conditionSet, 3, locationScores, evidenceEligibility);
+  return { scores, supporting, locationScores, otherScores, otherFieldCounts, evidenceEligibility, emergency, conditionSet, ranking };
 }
 
 function conditionSetForMode(mode) {
@@ -697,7 +714,7 @@ function showSpecialTestScreen() {
   }
 
   state._base = base; // 缓存，供 showResults 使用
-  const prelim = rankConditions(base.scores, base.conditionSet, 3, base.locationScores);
+  const prelim = rankConditions(base.scores, base.conditionSet, 3, base.locationScores, base.evidenceEligibility);
 
   if (prelim.length === 0) {
     // 没有明显阳性分数，跳过特殊检查直接出报告
@@ -819,7 +836,7 @@ function showResults() {
   //   阳性 → score *= (1 + 0.1 × posWeight)
   //   阴性 → score *= (1 − 0.1 × negWeight)
   applyTestAdjustments(scores, state.testResults);
-  const ranking = rankConditions(scores, conditionSet, 3, base.locationScores);
+  const ranking = rankConditions(scores, conditionSet, 3, base.locationScores, base.evidenceEligibility);
 
   if (emergency) {
     render(`
