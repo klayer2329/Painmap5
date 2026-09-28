@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
-<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/admin.css?v=20260927-logic-tree">
 </head>
 <body class="admin-body">
   <header class="admin-header">
@@ -40,6 +40,11 @@
     </section>
 
     <section id="dashboardPanel" hidden>
+      <nav class="admin-workspace-nav" aria-label="后台功能">
+        <button type="button" class="btn btn-primary" id="recordsViewBtn" aria-pressed="true" aria-controls="recordsWorkspace">筛查记录</button>
+        <button type="button" class="btn btn-secondary" id="logicViewBtn" aria-pressed="false" aria-controls="logicWorkspace">逻辑树 · 选择与输出</button>
+      </nav>
+      <div id="recordsWorkspace">
       <div class="admin-stats" id="statsGrid"></div>
       <div class="admin-panel admin-toolbar">
         <label>Mode
@@ -62,6 +67,11 @@
           <tbody id="recordsBody"></tbody>
         </table>
       </div>
+      </div>
+      <section id="logicWorkspace" class="admin-panel" aria-label="逻辑树与结果模拟" hidden>
+        <div class="admin-logic-heading"><span>展开分支，修改选择，查看评分与输出。</span><a class="btn btn-secondary" href="logic-tree.html?v=20260927-logic-tree" target="_blank" rel="noopener">独立窗口打开 ↗</a></div>
+        <iframe id="logicTreeFrame" title="Painmap 选择与结果逻辑树" data-src="logic-tree.html?v=20260927-logic-tree" loading="lazy"></iframe>
+      </section>
     </section>
   </main>
 
@@ -73,5 +83,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/admin.js?v=20260715-onset"></script>
+  <script src="js/admin-logic.js?v=20260927-logic-tree"></script>
 </body>
 </html>

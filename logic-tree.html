@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Painmap · 逻辑树</title><link rel="stylesheet" href="css/styles.css"><link rel="stylesheet" href="css/logic-tree.css?v=20260927-logic-tree"></head><body class="logic-body"><main class="logic-main">
+<div id="painmap-logic">
+  <h2>Painmap · 选择与结果逻辑树</h2>
+  <div class="viz-row"><span class="viz-badge">现有规则复现</span><span class="text-small text-muted">在线规则 · 逻辑模拟 · 匹配分不代表患病概率</span></div>
+  <div class="viz-controls" style="margin:16px 0"><button class="btn" data-view="tree" aria-pressed="true">浏览分支树</button><button class="btn" data-view="simulate" aria-pressed="false">修改选择，查看输出</button></div>
+  <section data-panel="tree">
+    <div class="flow" aria-label="筛查整体流程"><div>危险信号／疼痛≥8<small>有 → 中止并提示就医</small></div><span aria-hidden="true">→</span><div>起病方式<small>急性／劳损／不确定</small></div><span aria-hidden="true">→</span><div>位置＋其他答案<small>累计评分，检查证据门槛</small></div><span aria-hidden="true">→</span><div>特殊检查 → 前3名<small>伤病名称＋处理建议</small></div></div>
+    <div id="branch-tree"></div>
+  </section>
+  <section data-panel="simulate" hidden>
+    <div class="text-small text-muted">模拟答案 · 已预填示例，可逐项修改</div>
+    <div id="path-label" class="viz-row" aria-live="polite"></div>
+    <div class="sim-layout">
+      <div id="answer-editor"></div>
+      <div><h3>当前组合 → 输出</h3><div id="live-output" aria-live="polite"></div></div>
+    </div>
+    <div id="condition-detail"></div>
+  </section>
+  <details style="margin-top:20px"><summary>规则范围与版本</summary><div class="text-small">本页读取与筛查同站点的题目、伤病库、评分引擎和建议文案。模拟选择只在当前浏览器标签页保存，不会写入筛查数据库。界面按逻辑分组；真实问卷先填写病史，再选择位置。</div></details>
+</div>
+</main>
+<script src="js/data/questions.js?v=20260927-logic-tree"></script>
+<script src="js/data/acuteConditions.js?v=20260927-logic-tree"></script>
+<script src="js/data/chronicConditions.js?v=20260927-logic-tree"></script>
+<script src="js/data/rehab.js?v=20260927-logic-tree"></script>
+<script src="js/data/specialTests.js?v=20260927-logic-tree"></script>
+<script src="js/engine/scoring.js?v=20260927-logic-tree"></script>
+<script src="js/logic-tree.js?v=20260927-logic-tree"></script>
+</body></html>
