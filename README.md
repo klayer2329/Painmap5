@@ -12,11 +12,11 @@ python3 -m http.server 8080
 
 ## Flow
 
-Chinese/English selection → warning-sign checklist → pain VAS → acute/overuse questionnaire → image-based pain-location selection → additional questions → functional tests → score breakdown → special tests → Top 3 results and rehabilitation guidance.
+Chinese/English selection → screening context → safety checklist → pain VAS → targeted safety follow-ups and referral/summary options → acute/overuse questionnaire → image-based pain-location selection → additional questions → functional tests → score breakdown → special tests → Top 3 results and rehabilitation guidance.
 
 ## Current behavior
 
-- The warning-sign checklist comes before the pain VAS. The urgent-stop decision is evaluated after both screens are complete.
+- Safety checks distinguish current symptoms from resolved history. Shared `js/triage.js` routes to immediate care, prompt assessment, or continued screening; referral paths skip movement tests and offer a symptom summary. See [SAFETY_ROUTING.md](SAFETY_ROUTING.md) for limitations and recording semantics.
 - The injury-history screen, state, and score multiplier have been removed.
 - Seven illustrated region cards replace the old view-tab/hotspot selector; exact location, shape, and depth follow.
 - Each condition's normalized base score is 40% location match and 60% other questionnaire features. Global rules, urgent overrides, and special-test adjustments are applied afterward.

@@ -5,7 +5,7 @@
   <div class="viz-row"><span class="viz-badge">现有规则复现</span><span class="text-small text-muted">在线规则 · 逻辑模拟 · 匹配分不代表患病概率</span></div>
   <div class="viz-controls" style="margin:16px 0"><button class="btn" data-view="tree" aria-pressed="true">浏览分支树</button><button class="btn" data-view="simulate" aria-pressed="false">修改选择，查看输出</button></div>
   <section data-panel="tree">
-    <div class="flow" aria-label="筛查整体流程"><div>危险信号／疼痛≥8<small>有 → 中止并提示就医</small></div><span aria-hidden="true">→</span><div>起病方式<small>急性／劳损／不确定</small></div><span aria-hidden="true">→</span><div>位置＋其他答案<small>累计评分，检查证据门槛</small></div><span aria-hidden="true">→</span><div>特殊检查 → 前3名<small>伤病名称＋处理建议</small></div></div>
+    <div class="flow" aria-label="筛查整体流程"><div>当前症状＋红旗追问<small>立即就医／尽快评估／继续</small></div><span aria-hidden="true">→</span><div>起病方式<small>急性／劳损／不确定</small></div><span aria-hidden="true">→</span><div>位置＋其他答案<small>累计评分，检查证据门槛</small></div><span aria-hidden="true">→</span><div>特殊检查 → 前3名<small>伤病名称＋处理建议</small></div></div>
     <div id="branch-tree"></div>
   </section>
   <section data-panel="simulate" hidden>
@@ -26,5 +26,6 @@
 <script src="js/data/rehab.js?v=20260927-logic-tree"></script>
 <script src="js/data/specialTests.js?v=20260927-logic-tree"></script>
 <script src="js/engine/scoring.js?v=20260927-logic-tree"></script>
-<script src="js/logic-tree.js?v=20260927-logic-tree"></script>
+<script src="js/triage.js?v=20260928-safety"></script>
+<script src="js/logic-tree.js?v=20260928-safety"></script>
 </body></html>
