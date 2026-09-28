@@ -2,7 +2,7 @@
   "use strict";
 
   const CONSENT_VERSION = "2026-07-14";
-  const APP_VERSION = "painmap5-2026-07-20-evidence-threshold";
+  const APP_VERSION = "painmap5-2026-09-28-safety";
   let client = null;
 
   function uuid() {

@@ -150,122 +150,77 @@ function showWelcome() {
     state.dataConsent = consent.checked;
     start.disabled = !consent.checked;
   };
-  document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showRedFlagChecklist(); };
-  start.onclick = () => { state.dataConsent = true; showRedFlagChecklist(); };
+  document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showSafetyContext(); };
+  start.onclick = () => { state.dataConsent = true; showSafetyContext(); };
   document.getElementById("languageBtn").onclick = window.restartWithLanguageChoice;
 }
 
-// ---------------------------------------------------------
-// 1. RED FLAG — VAS
-// ---------------------------------------------------------
-function showRedFlagVas() {
-  setQuarter(0);
-  const current = state.answers.vas ?? 3;
-  render(`
-    <p class="eyebrow">Q1 · 红旗排查</p>
-    <h1 class="title">先确认是否存在需要立即就医的情况</h1>
-    <p class="subtitle">请滑动选择当前最严重时的疼痛程度</p>
-    <div class="card">
-      <div class="vas-wrap">
-        <div class="vas-value" id="vasNum">${current}</div>
-        <div class="vas-desc" id="vasDesc"></div>
-        <input type="range" min="0" max="10" step="1" id="vasSlider" value="${current}">
-        <div class="vas-scale"><span>0 完全不痛</span><span>10 无法忍受</span></div>
-      </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回</button>
-      <button class="btn btn-primary" id="nextBtn">下一步 →</button>
-    </div>
-  `);
-  const descFor = (v) => {
-    if (v == 0) return uiText("0 = No pain", "0 = 完全不痛");
-    if (v <= 3) return uiText("Mild pain", "轻微疼痛");
-    if (v <= 6) return uiText("Moderate pain", "中等疼痛");
-    if (v <= 9) return uiText("Severe pain", "严重疼痛");
-    return uiText("10 = Unbearable pain", "10 = 无法忍受的疼痛");
-  };
-  const numEl = document.getElementById("vasNum");
-  const descEl = document.getElementById("vasDesc");
-  descEl.textContent = descFor(current);
-  document.getElementById("vasSlider").oninput = (e) => {
-    numEl.textContent = e.target.value;
-    descEl.textContent = descFor(Number(e.target.value));
-  };
-  document.getElementById("backBtn").onclick = showRedFlagChecklist;
-  document.getElementById("nextBtn").onclick = () => {
-    state.answers.vas = Number(document.getElementById("vasSlider").value);
-    const vasHigh = state.answers.vas >= 8;
-    const anyFlag = REDFLAG_OPTIONS.some((o) => state.answers[o.id]);
-    if (vasHigh || anyFlag) showEmergency();
-    else showModeSelect();
-  };
+// Safety flow: current context -> checklist -> clarification -> routing.
+const triageText = item => PainmapTriage.text(item, window.HOOPFOOT_LANG);
+const triageEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function triageSelect(q) {
+  return `<label style="display:block;margin:16px 0"><strong>${triageText(q)}</strong><select class="triage-select" data-triage="${q.field}" style="display:block;width:100%;padding:12px;margin-top:8px;font:inherit;border:1px solid #aaa;border-radius:8px"><option value="">${uiText('Please choose','请选择')}</option>${q.options.map(o=>`<option value="${o.v}" ${state.answers[q.field]===o.v?'selected':''}>${triageText(o)}</option>`).join('')}</select></label>`;
 }
-
-// ---------------------------------------------------------
-// 2. RED FLAG — checklist
-// ---------------------------------------------------------
+function showSafetyContext() {
+  setQuarter(0);
+  render(`<p class="eyebrow">Q1 · ${uiText('Safety','安全排查')}</p><h1 class="title">${uiText('First, tell us about this visit','先了解这次筛查的目的')}</h1><p class="subtitle">${uiText('Safety questions always refer to symptoms NOW, even when reviewing a past injury. Do not exercise or force yourself to walk to answer.','即使回顾旧伤，安全问题也请按目前的情况回答。不要为了回答问题勉强走路或做测试。')}</p><div class="card">${triageSelect(PainmapTriage.questions[0])}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('Continue','下一步')}</button></div>`);
+  const select=document.querySelector('[data-triage]'), next=document.getElementById('nextBtn');next.disabled=!select.value;
+  select.onchange=()=>{state.answers.screening_context=select.value;next.disabled=!select.value;};
+  next.onclick=showRedFlagChecklist;document.getElementById('backBtn').onclick=showWelcome;
+}
 function showRedFlagChecklist() {
   setQuarter(0);
-  const selected = new Set(
-    REDFLAG_OPTIONS.filter((o) => state.answers[o.id]).map((o) => o.id)
-  );
-  render(`
-    <p class="eyebrow">Q1 · 红旗排查</p>
-    <h1 class="title">是否存在以下情况？</h1>
-    <p class="subtitle">可多选，如果都没有，请选择"完全没有以上情况"</p>
-    <div class="card">
-      <div class="checklist" id="rfList">
-        ${REDFLAG_OPTIONS.map((o) => `
-          <div class="chk ${selected.has(o.id) ? "selected" : ""}" data-id="${o.id}">
-            <span class="box">${selected.has(o.id) ? "✓" : ""}</span>
-            <span>${o.label}</span>
-          </div>`).join("")}
-        <div class="chk" data-id="none" style="border-color:var(--teal); margin-top:4px;">
-          <span class="box"></span><span>完全没有以上情况</span>
-        </div>
-      </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回</button>
-      <button class="btn btn-primary" id="nextBtn">下一步 →</button>
-    </div>
-  `);
-  document.querySelectorAll("#rfList .chk").forEach((el) => {
-    el.onclick = () => {
-      const id = el.dataset.id;
-      if (id === "none") {
-        REDFLAG_OPTIONS.forEach((o) => (state.answers[o.id] = false));
-        showRedFlagChecklist();
-        return;
-      }
-      state.answers[id] = !state.answers[id];
-      showRedFlagChecklist();
-    };
-  });
-  document.getElementById("backBtn").onclick = showWelcome;
-  document.getElementById("nextBtn").onclick = showRedFlagVas;
+  const labels=[['unable_to_weight_bear','走路／负重有困难','Difficulty walking or bearing weight'],['deformity','足踝形状异常（包括原有足型问题）','Unusual shape, including longstanding foot shape'],['severe_rest_pain','曾有或目前有剧烈静息痛','Severe pain at rest now or previously'],['night_pain','曾有或目前有夜间痛醒','Pain waking you at night now or previously'],['neurological_symptoms','曾有或目前有麻木／刺痛／感觉减退','Numbness, tingling or reduced sensation now or previously']];
+  render(`<p class="eyebrow">Q1 · ${uiText('Safety','安全排查')}</p><h1 class="title">${uiText('Which concerns apply?','有没有以下情况需要进一步确认？')}</h1><p class="subtitle">${uiText('Select all that apply. We will clarify whether these are current or resolved.','可多选；接下来会区分目前仍有的症状与已经恢复的旧伤情况。')}</p><div class="card">${labels.map(([id,zh,en])=>`<label style="display:block;padding:12px 0"><input type="checkbox" data-safety="${id}" ${state.answers[id]?'checked':''}> ${uiText(en,zh)}</label>`).join('')}<label style="display:block;padding:12px 0"><input type="checkbox" id="safetyNone" ${state.answers.rf_none?'checked':''}> ${uiText('None of these','以上都没有')}</label>${PainmapTriage.questions.filter(q=>['rf_circulation','rf_systemic'].includes(q.field)).map(triageSelect).join('')}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('Continue','下一步')}</button></div>`);
+  const ready=()=>{document.getElementById('nextBtn').disabled=!(state.answers.rf_none||labels.some(([id])=>state.answers[id]))||!state.answers.rf_circulation||!state.answers.rf_systemic;};
+  document.querySelectorAll('[data-safety]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.safety]=el.checked;state.answers.rf_none=false;document.getElementById('safetyNone').checked=false;const q=PainmapTriage.questions.find(q=>q.flag===el.dataset.safety);delete state.answers[q.field];ready();});
+  document.getElementById('safetyNone').onchange=e=>{state.answers.rf_none=e.target.checked;if(e.target.checked){labels.forEach(([id])=>state.answers[id]=false);document.querySelectorAll('[data-safety]').forEach(el=>el.checked=false);}ready();};
+  document.querySelectorAll('[data-triage]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.triage]=el.value;if(el.dataset.triage==='rf_circulation'&&el.value==='yes'){showEmergency();return;}ready();});
+  ready();document.getElementById('backBtn').onclick=showSafetyContext;document.getElementById('nextBtn').onclick=showRedFlagVas;
 }
-
-// ---------------------------------------------------------
-// 3. EMERGENCY (terminal)
-// ---------------------------------------------------------
-function showEmergency() {
+function showRedFlagVas() {
   setQuarter(0);
-  render(`
-    <div class="emergency">
-      <div class="icon">⚠️</div>
-      <h1>发现高风险信号</h1>
-      <p>根据你提供的信息（剧烈疼痛或负重/畸形/夜间痛/神经症状等），建议尽快前往医院或运动医学专科就诊，明确诊断并排除骨折、脱位或神经血管损伤等严重情况。</p>
-      <p style="margin-top:14px; font-weight:600;">本次筛查到此结束。</p>
-    </div>
-    ${dataSaveStatusHtml()}
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="restartBtn">重新开始筛查</button>
-    </div>
-  `);
-  saveScreeningRecord("emergency_stop", null, {}, [], true);
-  document.getElementById("restartBtn").onclick = () => location.reload();
+  render(`<p class="eyebrow">Q1 · ${uiText('Pain','疼痛程度')}</p><h1 class="title">${uiText('How painful is the current episode?','这次不适期间，疼痛最严重时有几分？')}</h1><p class="subtitle">${uiText('Choose 0 if you have no pain now. A high score will be clarified before routing.','如果目前已经完全不痛，请选0分。高评分会继续确认发生时间，不会只凭一次评分结束。')}</p><div class="card"><label>${uiText('Pain score (0–10)','疼痛评分（0–10）')}<select id="vasSelect" style="padding:12px;margin:12px;font:inherit"><option value="">${uiText('Choose','请选择')}</option>${Array.from({length:11},(_,i)=>`<option value="${i}" ${state.answers.vas===i?'selected':''}>${i}</option>`).join('')}</select></label><p>${uiText('0 = no pain; 10 = unbearable','0＝完全不痛；10＝无法忍受')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" ${state.answers.vas===undefined?'disabled':''}>${uiText('Continue','下一步')}</button></div>`);
+  const el=document.getElementById('vasSelect');el.onchange=()=>{if(el.value==='')delete state.answers.vas;else state.answers.vas=Number(el.value);delete state.answers.rf_pain_timing;document.getElementById('nextBtn').disabled=el.value==='';};
+  document.getElementById('backBtn').onclick=showRedFlagChecklist;document.getElementById('nextBtn').onclick=showSafetyFollowup;
+}
+function showSafetyFollowup() {
+  const qs=PainmapTriage.active(state.answers).filter(q=>q.flag||q.highPain);
+  if(!qs.length) return finishSafety();
+  render(`<p class="eyebrow">Q1 · ${uiText('Clarify symptoms','进一步确认')}</p><h1 class="title">${uiText('What is happening now?','把当前症状与过去的情况分清楚')}</h1><p class="subtitle">${uiText('Answer from what you have already noticed. Do not perform movement tests.','根据已经观察到的情况回答，不需要做任何动作测试。')}</p><div class="card">${qs.map(triageSelect).join('')}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('View guidance','查看下一步建议')}</button></div>`);
+  const ready=()=>document.getElementById('nextBtn').disabled=qs.some(q=>!state.answers[q.field]);
+  document.querySelectorAll('[data-triage]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.triage]=el.value;if((el.dataset.triage==='rf_shape'&&el.value==='new')||(el.dataset.triage==='rf_neuro'&&['new','unsure'].includes(el.value))){showEmergency();return;}ready();});
+  ready();document.getElementById('backBtn').onclick=showRedFlagVas;document.getElementById('nextBtn').onclick=finishSafety;
+}
+function finishSafety() {
+  const result=PainmapTriage.evaluate(state.answers);state.answers.safety_triage=result;
+  if(result.level!=='continue') return showEmergency();
+  render(`<h1 class="title">${uiText('You can continue the questionnaire','可以继续了解症状')}</h1><div class="card"><p>${uiText('Your current answers do not trigger a referral in this safety check. This does not rule out a fracture or another serious condition. Seek medical care if pain worsens, you cannot bear weight, numbness or a change in shape/colour appears.','目前的答案未触发本次安全分流，但不能据此排除骨折或其他严重问题。如果疼痛加重、不能负重，或出现麻木、形状／颜色改变，请及时就医。')}</p><p>${uiText('Answer the remaining questions about your CURRENT symptoms. If reviewing an old injury with no symptoms now, you may finish with a history summary instead of movement tests.','后续问卷请按目前症状回答。如果只是回顾已经恢复的旧伤，可以直接整理旧伤摘要，不做动作测试。')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Review answers','返回核对')}</button><button class="btn btn-primary" id="nextBtn">${uiText('Continue with current symptoms','继续填写目前症状')}</button>${state.answers.screening_context==='history'?`<button class="btn btn-secondary" id="historyBtn">${uiText('History summary only','只整理旧伤摘要')}</button>`:''}</div>`);
+  document.getElementById('backBtn').onclick=showRedFlagChecklist;document.getElementById('nextBtn').onclick=showModeSelect;
+  if(document.getElementById('historyBtn'))document.getElementById('historyBtn').onclick=()=>showSafetySummary(true);
+}
+function showEmergency() {
+  const result=PainmapTriage.evaluate(state.answers);state.answers.safety_triage=result;
+  const immediate=result.level==='immediate';
+  render(`<div class="emergency"><h1>${immediate?uiText('Seek emergency care now','请立即就医'):uiText('Arrange prompt medical assessment','请尽快接受专业评估')}</h1><ul style="text-align:left">${result.reasons.map(r=>`<li>${triageText(r)}</li>`).join('')}</ul><p>${immediate?uiText('Go to an emergency department now. Ask someone to accompany you; call your local emergency number if you cannot travel safely. Do not delay care to finish this form.','请立即前往急诊，请他人陪同；无法安全前往时联系当地急救服务。不要为了填完问卷延误就医。'):uiText('Contact a clinician or urgent-care service promptly to decide how soon you need assessment. If symptoms are severe or worsening, or you cannot bear weight, seek care today.','请尽快联系医生或急诊／急诊门诊，确认就诊安排。若症状剧烈、不断加重或不能负重，请当天就医。')}</p><p>${uiText('Stop sport. Do not try hopping, cutting, forced stretching or self-correction of a deformity. If under 18, tell a parent/guardian or team medical professional.','暂停运动，不做跳跃、变向、强行拉伸或自行掰正。未满18岁请告知家长／监护人或队医。')}</p><p>${uiText('No condition ranking or movement tests will be shown. You can optionally prepare a symptom summary.','这里不进行伤病排序或动作测试；你仍可以整理一份症状摘要。')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Review answers','返回核对答案')}</button><button class="btn btn-primary" id="summaryBtn">${uiText('Prepare visit summary (optional)','整理就医摘要（可选）')}</button><button class="btn btn-secondary" id="finishBtn">${uiText('Finish here','直接完成')}</button></div>${dataSaveStatusHtml()}`);
+  document.getElementById('backBtn').onclick=()=>{if(!state.submissionId)showRedFlagChecklist();};
+  document.getElementById('summaryBtn').onclick=()=>showSafetySummary(false);
+  document.getElementById('finishBtn').onclick=()=>completeSafetyRecord(false);
+}
+function showSafetySummary(historyOnly=false) {
+  const summary=state.answers.safety_summary||{};
+  render(`<h1 class="title">${uiText('Symptom summary','症状摘要')}</h1><p>${uiText('Optional. Do not delay medical care. Do not enter your name or contact details.','以下均为选填，不要因此延误就医。请勿填写姓名或联系方式。')}</p><div class="card">${[['location','哪里不舒服？','Where does it hurt?'],['onset','什么时候开始？发生了什么？','When did it start? What happened?'],['progress','目前症状及变化／此前诊断和处理','Current symptoms and changes / previous diagnosis and care']].map(([key,zh,en])=>`<label style="display:block;margin:12px 0">${uiText(en,zh)}<textarea data-summary="${key}" maxlength="500" rows="3" style="display:block;width:100%;box-sizing:border-box;font:inherit">${triageEscape(summary[key]||'')}</textarea></label>`).join('')}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="finishBtn">${uiText('Generate summary','生成摘要')}</button></div>`);
+  const capture=()=>{state.answers.safety_summary=Object.fromEntries([...document.querySelectorAll('[data-summary]')].map(el=>[el.dataset.summary,el.value.trim()]));};
+  document.getElementById('backBtn').onclick=()=>{capture();historyOnly?finishSafety():showEmergency();};
+  document.getElementById('finishBtn').onclick=()=>{capture();completeSafetyRecord(historyOnly);};
+}
+function completeSafetyRecord(historyOnly) {
+  state.answers.safety_summary_only=historyOnly;
+  const result=state.answers.safety_triage||PainmapTriage.evaluate(state.answers);
+  render(`<h1 class="title">${historyOnly?uiText('Past-injury summary','旧伤回顾摘要'):result.level==='immediate'?uiText('Seek emergency care now','请立即就医'):uiText('Prompt medical assessment advised','请尽快接受专业评估')}</h1><div class="card"><p>${uiText('This is a record of your answers, not a diagnosis.','以下为你的自述记录，不是医学诊断。')}</p>${result.reasons.map(r=>`<p>• ${triageText(r)}</p>`).join('')}${PainmapTriage.active(state.answers).filter(q=>state.answers[q.field]).map(q=>`<p><strong>${triageText(q)}</strong><br>${triageText(q.options.find(o=>o.v===state.answers[q.field]))}</p>`).join('')}<p>${uiText('Pain score','疼痛评分')}：${state.answers.vas??uiText('Not answered','未填写')}/10</p>${Object.entries(state.answers.safety_summary||{}).map(([k,v])=>`<p><strong>${({location:uiText('Location','位置'),onset:uiText('Onset','发生经过'),progress:uiText('Symptoms / previous care','症状／此前诊疗')})[k]}</strong><br><span style="white-space:pre-wrap">${triageEscape(v)||'—'}</span></p>`).join('')}<p>${historyOnly?uiText('No current diagnosis or movement assessment was made.','本次未进行当前伤病诊断或动作评估。'):uiText('Stop sport and do not perform movement tests. Do not delay care to finish or print this summary. If symptoms worsen or the foot becomes cold, discoloured or numb, seek emergency care.','暂停运动，不做动作测试；不要为了完成或打印摘要延误就医。如症状加重，或脚发冷、变色、麻木，请立即就医。')}</p></div>${dataSaveStatusHtml()}<div class="btn-row"><button class="btn btn-secondary" id="printBtn">${uiText('Print / save PDF','打印／保存PDF')}</button><button class="btn btn-secondary" id="restartBtn">${uiText('Start a new screening','重新开始筛查')}</button></div>`);
+  // Keep legacy outcome values accepted by the existing database; detailed routing is in answers.
+  saveScreeningRecord(historyOnly?'no_candidate':'emergency_stop',null,{},[],!historyOnly);
+  document.getElementById('printBtn').onclick=()=>window.print();document.getElementById('restartBtn').onclick=()=>location.reload();
 }
 
 // ---------------------------------------------------------
@@ -663,7 +618,7 @@ function computeResults() {
   let emergency = false;
   if (state.mode === "acute") {
     applyOverrides(scores, state.answers, overrides, supporting);
-    emergency = overrides.some((o) => o.emergency && o.when(state.answers));
+    emergency = PainmapTriage.evaluate(state.answers).level !== "continue";
   }
 
   const ranking = rankConditions(scores, conditionSet, 3, locationScores, evidenceEligibility);

@@ -84,7 +84,7 @@
       [records.length, "Total screenings"],
       [participants, "Anonymous participants"],
       [completed, "Completed reports"],
-      [emergency, "Emergency stops"],
+      [emergency, "Safety referrals / legacy stops"],
     ].map(([value, label]) => `<div class="admin-stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
   }
 
@@ -143,6 +143,7 @@
         <div class="detail-item"><span>Location</span><strong>${escapeHtml([record.primary_location, record.secondary_location].filter(Boolean).join(" · ") || "—")}</strong></div>
         <div class="detail-item"><span>Top result</span><strong>${escapeHtml(top?.nameEn || top?.key || "—")}</strong></div>
       </div>
+      ${record.answers?.safety_triage ? `<div class="card"><h3>安全分流 · ${{immediate:"立即就医",urgent:"尽快接受专业评估",continue:"可继续问卷"}[record.answers.safety_triage.level] || "—"}${record.answers.safety_summary_only?"（仅旧伤摘要）":""}</h3><p>${escapeHtml((record.answers.safety_triage.reasons || []).map(r=>r.zh).join("；") || "未触发安全转诊；不代表排除严重损伤")}</p><p>版本：${escapeHtml(record.answers.safety_triage.version)}</p></div>` : ""}
       ${[["All choices", record.answers], ["Special tests", record.special_tests], ["Base scores", record.base_scores], ["Final scores", record.final_scores], ["Final ranking", record.ranking]].map(([label, value], index) => `<details class="detail-json" ${index === 0 ? "open" : ""}><summary>${label}</summary><pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre></details>`).join("")}`;
     detailDialog.showModal();
   }

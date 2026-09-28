@@ -50,8 +50,9 @@
     try {
       await loadScript("js/en.js?v=20260716-language");
       await loadScript("js/glossary.js?v=20260716-language");
-      await loadScript("js/dataStore.js?v=20260716-language");
-      await loadScript("js/app.js?v=20260720-threshold");
+      await loadScript("js/dataStore.js?v=20260928-safety");
+      await loadScript("js/triage.js?v=20260928-safety");
+      await loadScript("js/app.js?v=20260928-safety");
     } catch (error) {
       console.error(error);
       app.innerHTML = `<div class="screen"><div class="card language-error">${language === "zh" ? "页面加载失败，请刷新后重试。" : "The page could not load. Please refresh and try again."}</div></div>`;
