@@ -29,6 +29,8 @@ function setQuarter(idx) {
 }
 
 function render(html, alreadyLocalized = false) {
+  state._locationPicker?.dispose();
+  state._locationPicker = null;
   appEl.innerHTML = `<div class="screen">${alreadyLocalized ? html : translateUi(html)}</div>`;
   window.applyGlossaryTerms?.(appEl);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -354,55 +356,45 @@ function renderQuestion(q, onNext, onBack) {
 // ---------------------------------------------------------
 function showPainMapPrimary() {
   setQuarter(2);
-  const selected = state.answers.primary_location;
   render(`
-    <p class="eyebrow">Q3 · 疼痛定位</p>
-    <h1 class="title">点击疼痛最明显的区域</h1>
-    <p class="subtitle">请选择最接近疼痛位置的图片</p>
-    <div class="card">
-      <div class="loc-grid" id="locationGrid">${renderLocationCards(selected)}</div>
-    </div>
+    <p class="eyebrow">Q3 · ${uiText("Pain location", "疼痛定位")}</p>
+    <h1 class="title">${uiText("Select the most painful area", "点击疼痛最明显的区域")}</h1>
+    <div id="painmap3d"></div>
     <div class="btn-row">
-      <button class="btn btn-secondary" id="backBtn">← 返回</button>
-      <button class="btn btn-primary" id="nextBtn" ${selected ? "" : "disabled"}>下一步 →</button>
+      <button class="btn btn-secondary" id="backBtn">${uiText("← Back", "← 返回")}</button>
+      <button class="btn btn-primary" id="nextBtn" disabled>${uiText("Confirm location →", "确认位置 →")}</button>
     </div>
-  `);
-
-  document.querySelectorAll("#locationGrid .loc-card").forEach((el) => {
-    el.onclick = () => {
-      state.answers.primary_location = LOCATION_CARDS[Number(el.dataset.regionIndex)].region;
-      state.answers.secondary_location = undefined;
-      showPainMapPrimary();
-    };
+  `, true);
+  const valid = () => PAIN_MAP_REGIONS[state.answers.primary_location]?.includes(state.answers.secondary_location);
+  document.getElementById("nextBtn").disabled = !valid();
+  state._locationPicker = window.PainmapLocation3D.mount(document.getElementById("painmap3d"), {
+    answers: state.answers,
+    language: window.HOOPFOOT_LANG,
+    onChange(selection) {
+      if (selection) Object.assign(state.answers, selection);
+      else {
+        delete state.answers.primary_location;
+        delete state.answers.secondary_location;
+      }
+      document.getElementById("nextBtn").disabled = !valid();
+    },
   });
   document.getElementById("backBtn").onclick = () => {
     if (state.mode !== "acute" && state.answers.pain_action === "静止休息") showStandingPainStep();
     else { state.qIndex = currentQuestionSet().length - 1; showQuestionnaireStep(); }
   };
   document.getElementById("nextBtn").onclick = () => {
-    if (selected) showPainMapSecondary();
+    if (!valid()) return;
+    // A restored location is also explicitly confirmed before proceeding.
+    state.answers.foot_side ||= "right";
+    state.answers.location_input ||= "3d";
+    state.answers.location_model_version = window.PainmapLocation3D.version;
+    showPainShape();
   };
 }
 
-function showPainMapSecondary() {
-  setQuarter(2);
-  const primary = state.answers.primary_location;
-  const options = PAIN_MAP_REGIONS[primary] || [];
-  const current = state.answers.secondary_location;
-  render(`
-    <p class="eyebrow">Q3 · 疼痛定位</p>
-    <h1 class="title">具体是哪个位置？</h1>
-    <p class="subtitle">大区域：${primary}</p>
-    <div class="card">
-      <div class="loc-grid detail-grid">${renderSecondaryLocationCards(primary, options, current)}</div>
-    </div>
-    <div class="btn-row"><button class="btn btn-secondary" id="backBtn">← 返回</button></div>
-  `);
-  document.getElementById("backBtn").onclick = showPainMapPrimary;
-  document.querySelectorAll(".detail-card").forEach((el) => {
-    el.onclick = () => { state.answers.secondary_location = options[Number(el.dataset.locationIndex)]; showPainShape(); };
-  });
-}
+// Kept for existing back-navigation callers; both location fields are now selected together.
+function showPainMapSecondary() { showPainMapPrimary(); }
 
 function showPainShape() {
   setQuarter(2);
