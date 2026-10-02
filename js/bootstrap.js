@@ -53,7 +53,7 @@
       await loadScript("js/dataStore.js?v=20261001-foot");
       await loadScript("js/triage.js?v=20260928-safety");
       await loadScript("js/location-3d.js?v=20261001-foot");
-      await loadScript("js/app.js?v=20261001-foot");
+      await loadScript("js/app.js?v=20261001-controls");
     } catch (error) {
       console.error(error);
       app.innerHTML = `<div class="screen"><div class="card language-error">${language === "zh" ? "页面加载失败，请刷新后重试。" : "The page could not load. Please refresh and try again."}</div></div>`;

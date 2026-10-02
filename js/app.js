@@ -162,13 +162,21 @@ const renderSafety = html => render(html, true);
 const triageText = item => PainmapTriage.text(item, window.HOOPFOOT_LANG);
 const triageEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function triageSelect(q) {
-  return `<label style="display:block;margin:16px 0"><strong>${triageText(q)}</strong><select class="triage-select" data-triage="${q.field}" style="display:block;width:100%;padding:12px;margin-top:8px;font:inherit;border:1px solid #aaa;border-radius:8px"><option value="">${uiText('Please choose','请选择')}</option>${q.options.map(o=>`<option value="${o.v}" ${state.answers[q.field]===o.v?'selected':''}>${triageText(o)}</option>`).join('')}</select></label>`;
+  return `<fieldset style="border:0;padding:0;margin:20px 0"><legend style="font-weight:700;margin-bottom:12px">${triageText(q)}</legend><div class="opt-list">${q.options.map((o,i)=>`<button type="button" class="opt ${state.answers[q.field]===o.v?'selected':''}" data-triage="${q.field}" value="${o.v}" aria-pressed="${state.answers[q.field]===o.v}"><span class="num">${i+1}</span><span>${triageText(o)}</span></button>`).join('')}</div></fieldset>`;
+}
+function bindTriageChoices(onChange) {
+  const buttons=document.querySelectorAll('[data-triage]');
+  buttons.forEach(el=>el.onclick=()=>{
+    state.answers[el.dataset.triage]=el.value;
+    buttons.forEach(b=>{const active=state.answers[b.dataset.triage]===b.value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});
+    onChange(el);
+  });
 }
 function showSafetyContext() {
   setQuarter(0);
   renderSafety(`<p class="eyebrow">Q1 · ${uiText('Safety','安全排查')}</p><h1 class="title">${uiText('First, tell us about this visit','先了解这次筛查的目的')}</h1><p class="subtitle">${uiText('Safety questions always refer to symptoms NOW, even when reviewing a past injury. Do not exercise or force yourself to walk to answer.','即使回顾旧伤，安全问题也请按目前的情况回答。不要为了回答问题勉强走路或做测试。')}</p><div class="card">${triageSelect(PainmapTriage.questions[0])}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('Continue','下一步')}</button></div>`);
-  const select=document.querySelector('[data-triage]'), next=document.getElementById('nextBtn');next.disabled=!select.value;
-  select.onchange=()=>{state.answers.screening_context=select.value;next.disabled=!select.value;};
+  const next=document.getElementById('nextBtn');next.disabled=!state.answers.screening_context;
+  bindTriageChoices(()=>{next.disabled=!state.answers.screening_context;});
   next.onclick=showRedFlagChecklist;document.getElementById('backBtn').onclick=showWelcome;
 }
 function showRedFlagChecklist() {
@@ -178,13 +186,15 @@ function showRedFlagChecklist() {
   const ready=()=>{document.getElementById('nextBtn').disabled=!(state.answers.rf_none||labels.some(([id])=>state.answers[id]))||!state.answers.rf_circulation||!state.answers.rf_systemic;};
   document.querySelectorAll('[data-safety]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.safety]=el.checked;state.answers.rf_none=false;document.getElementById('safetyNone').checked=false;const q=PainmapTriage.questions.find(q=>q.flag===el.dataset.safety);delete state.answers[q.field];ready();});
   document.getElementById('safetyNone').onchange=e=>{state.answers.rf_none=e.target.checked;if(e.target.checked){labels.forEach(([id])=>state.answers[id]=false);document.querySelectorAll('[data-safety]').forEach(el=>el.checked=false);}ready();};
-  document.querySelectorAll('[data-triage]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.triage]=el.value;if(el.dataset.triage==='rf_circulation'&&el.value==='yes'){showEmergency();return;}ready();});
+  bindTriageChoices(el=>{if(el.dataset.triage==='rf_circulation'&&el.value==='yes'){showEmergency();return;}ready();});
   ready();document.getElementById('backBtn').onclick=showSafetyContext;document.getElementById('nextBtn').onclick=showRedFlagVas;
 }
 function showRedFlagVas() {
   setQuarter(0);
-  renderSafety(`<p class="eyebrow">Q1 · ${uiText('Pain','疼痛程度')}</p><h1 class="title">${uiText('How painful is the current episode?','这次不适期间，疼痛最严重时有几分？')}</h1><p class="subtitle">${uiText('Choose 0 if you have no pain now. A high score will be clarified before routing.','如果目前已经完全不痛，请选0分。高评分会继续确认发生时间，不会只凭一次评分结束。')}</p><div class="card"><label>${uiText('Pain score (0–10)','疼痛评分（0–10）')}<select id="vasSelect" style="padding:12px;margin:12px;font:inherit"><option value="">${uiText('Choose','请选择')}</option>${Array.from({length:11},(_,i)=>`<option value="${i}" ${state.answers.vas===i?'selected':''}>${i}</option>`).join('')}</select></label><p>${uiText('0 = no pain; 10 = unbearable','0＝完全不痛；10＝无法忍受')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" ${state.answers.vas===undefined?'disabled':''}>${uiText('Continue','下一步')}</button></div>`);
-  const el=document.getElementById('vasSelect');el.onchange=()=>{if(el.value==='')delete state.answers.vas;else state.answers.vas=Number(el.value);delete state.answers.rf_pain_timing;document.getElementById('nextBtn').disabled=el.value==='';};
+  renderSafety(`<p class="eyebrow">Q1 · ${uiText('Pain','疼痛程度')}</p><h1 class="title">${uiText('How painful is the current episode?','这次不适期间，疼痛最严重时有几分？')}</h1><p class="subtitle">${uiText('Choose 0 if you have no pain now. A high score will be clarified before routing.','如果目前已经完全不痛，请选0分。高评分会继续确认发生时间，不会只凭一次评分结束。')}</p><div class="card"><label for="vasSlider">${uiText('Pain score (0–10)','疼痛评分（0–10）')}</label><div class="vas-wrap"><div class="vas-value" id="vasValue" aria-live="polite">${state.answers.vas??'—'}</div><input id="vasSlider" type="range" min="0" max="10" step="1" value="${state.answers.vas??0}" aria-describedby="vasHelp"><div class="vas-scale">${Array.from({length:11},(_,i)=>`<span>${i}</span>`).join('')}</div></div><p id="vasHelp">${uiText('0 = no pain; 10 = unbearable. Tap or drag the slider to choose.','0＝完全不痛；10＝无法忍受。点击或拖动滑条选择分数。')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" ${state.answers.vas===undefined?'disabled':''}>${uiText('Continue','下一步')}</button></div>`);
+  const el=document.getElementById('vasSlider');
+  const updateVas=()=>{state.answers.vas=Number(el.value);document.getElementById('vasValue').textContent=el.value;delete state.answers.rf_pain_timing;document.getElementById('nextBtn').disabled=false;};
+  el.oninput=updateVas;el.onchange=updateVas;el.onclick=updateVas;
   document.getElementById('backBtn').onclick=showRedFlagChecklist;document.getElementById('nextBtn').onclick=showSafetyFollowup;
 }
 function showSafetyFollowup() {
@@ -192,7 +202,7 @@ function showSafetyFollowup() {
   if(!qs.length) return finishSafety();
   renderSafety(`<p class="eyebrow">Q1 · ${uiText('Clarify symptoms','进一步确认')}</p><h1 class="title">${uiText('What is happening now?','把当前症状与过去的情况分清楚')}</h1><p class="subtitle">${uiText('Answer from what you have already noticed. Do not perform movement tests.','根据已经观察到的情况回答，不需要做任何动作测试。')}</p><div class="card">${qs.map(triageSelect).join('')}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('View guidance','查看下一步建议')}</button></div>`);
   const ready=()=>document.getElementById('nextBtn').disabled=qs.some(q=>!state.answers[q.field]);
-  document.querySelectorAll('[data-triage]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.triage]=el.value;if((el.dataset.triage==='rf_shape'&&el.value==='new')||(el.dataset.triage==='rf_neuro'&&['new','unsure'].includes(el.value))){showEmergency();return;}ready();});
+  bindTriageChoices(el=>{if((el.dataset.triage==='rf_shape'&&el.value==='new')||(el.dataset.triage==='rf_neuro'&&['new','unsure'].includes(el.value))){showEmergency();return;}ready();});
   ready();document.getElementById('backBtn').onclick=showRedFlagVas;document.getElementById('nextBtn').onclick=finishSafety;
 }
 function finishSafety() {
