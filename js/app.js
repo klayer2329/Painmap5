@@ -16,6 +16,7 @@ const state = {
   sessionId: window.ScreeningDataStore?.uuid?.() || null,
   submissionId: null,
   _submissionPromise: null,
+  _currentStep:null, _latestStep:null,
 };
 
 const appEl = document.getElementById("app");
@@ -32,6 +33,7 @@ function render(html, alreadyLocalized = false) {
   state._locationPicker?.dispose();
   state._locationPicker = null;
   appEl.innerHTML = `<div class="screen">${alreadyLocalized ? html : translateUi(html)}</div>`;
+  renderDraftNavigation();
   window.applyGlossaryTerms?.(appEl);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -77,6 +79,7 @@ function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [
     emergency,
   }).then((result) => {
     if (result.status === "saved" || result.status === "already-saved") {
+      persistDraft();
       setDataSaveStatus(uiText(`Anonymous screening saved · Record ${result.id.slice(0, 8)}`, `匿名筛查已保存 · 记录 ${result.id.slice(0, 8)}`), "success");
     } else if (result.status === "not-configured") {
       setDataSaveStatus(uiText("Anonymous data storage is not connected yet.", "匿名数据存储尚未连接。"), "warning");
@@ -152,6 +155,7 @@ function showWelcome() {
   consent.onchange = () => {
     state.dataConsent = consent.checked;
     start.disabled = !consent.checked;
+    persistDraft();
   };
   document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showRedFlagChecklist(); };
   start.onclick = () => { state.dataConsent = true; showRedFlagChecklist(); };
@@ -175,19 +179,22 @@ function bindTriageChoices(onChange) {
 }
 function showRedFlagChecklist() {
   setQuarter(0);
-  const labels=[['unable_to_weight_bear','走路／负重有困难','Difficulty walking or bearing weight'],['deformity','足踝形状异常（包括原有足型问题）','Unusual shape, including longstanding foot shape'],['severe_rest_pain','剧烈静息痛','Severe pain at rest'],['night_pain','夜间痛醒','Pain waking you at night'],['neurological_symptoms','麻木／刺痛／感觉减退','Numbness, tingling or reduced sensation']];
-  renderSafety(`<p class="eyebrow">Q1 · ${uiText('Safety','安全排查')}</p><h1 class="title">${uiText('Which concerns apply?','有没有以下情况需要进一步确认？')}</h1><p class="subtitle">${uiText('Select all that apply to the same injury and stage.','可多选。请按本次填写的同一次伤病、同一阶段回答。')}</p><div class="card">${labels.map(([id,zh,en])=>`<label style="display:block;padding:12px 0"><input type="checkbox" data-safety="${id}" ${state.answers[id]?'checked':''}> ${uiText(en,zh)}</label>`).join('')}<label style="display:block;padding:12px 0"><input type="checkbox" id="safetyNone" ${state.answers.rf_none?'checked':''}> ${uiText('None of these','以上都没有')}</label>${PainmapTriage.questions.filter(q=>['rf_circulation','rf_systemic'].includes(q.field)).map(triageSelect).join('')}</div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('Continue','下一步')}</button></div>`);
-  const ready=()=>{document.getElementById('nextBtn').disabled=!(state.answers.rf_none||labels.some(([id])=>state.answers[id]))||!state.answers.rf_circulation||!state.answers.rf_systemic;};
-  document.querySelectorAll('[data-safety]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.safety]=el.checked;state.answers.rf_none=false;document.getElementById('safetyNone').checked=false;const q=PainmapTriage.questions.find(q=>q.flag===el.dataset.safety);delete state.answers[q.field];ready();});
-  document.getElementById('safetyNone').onchange=e=>{state.answers.rf_none=e.target.checked;if(e.target.checked){labels.forEach(([id])=>state.answers[id]=false);document.querySelectorAll('[data-safety]').forEach(el=>el.checked=false);}ready();};
-  bindTriageChoices(el=>{if(el.dataset.triage==='rf_circulation'&&el.value==='yes'){showEmergency();return;}ready();});
-  ready();document.getElementById('backBtn').onclick=showWelcome;document.getElementById('nextBtn').onclick=showRedFlagVas;
+  const labels=[['unable_to_weight_bear','走路／负重有困难','Difficulty walking or bearing weight'],['deformity','足踝形状异常（包括原有足型问题）','Unusual foot/ankle shape'],['severe_rest_pain','剧烈静息痛','Severe pain at rest'],['night_pain','夜间痛醒','Pain waking you at night'],['neurological_symptoms','麻木／刺痛／感觉减退','Numbness, tingling or reduced sensation']];
+  const extra=[['rf_circulation','脚明显发冷、发白／发青，或伤口大量出血','An unusually cold, pale/blue foot or heavy bleeding'],['rf_systemic','发热／寒战，同时伴足踝红、热、肿、痛','Fever/chills with a red, hot, swollen or painful foot/ankle']];
+  renderSafety(`<p class="eyebrow">Q1 · ${uiText('Safety','安全排查')}</p><h1 class="title">${uiText('Which concerns apply?','有没有以下情况需要进一步确认？')}</h1><p class="subtitle">${uiText('Check all signs you know apply to this injury and stage. For the last two items, unchecked means no or unsure; uncertainty does not rule out a problem.','请勾选这次伤病、这一阶段明确出现的情况。最后两项未勾选表示“没有或不确定”；不确定不代表已排除问题。')}</p><div class="card">${labels.map(([id,zh,en])=>`<label style="display:block;padding:12px 0"><input type="checkbox" data-safety="${id}" ${state.answers[id]?'checked':''}> ${uiText(en,zh)}</label>`).join('')}${extra.map(([id,zh,en])=>`<label style="display:block;padding:12px 0"><input type="checkbox" data-safety-extra="${id}" ${state.answers[id]==='yes'?'checked':''}> ${uiText(en,zh)}</label>`).join('')}<label style="display:block;padding:12px 0;border-top:1px solid #ddd"><input type="checkbox" id="safetyNone" ${state.answers.rf_none?'checked':''}> ${uiText('None of the above / unsure','以上没有／不确定')}</label></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" disabled>${uiText('Continue','下一步')}</button></div>`);
+  const ready=()=>document.getElementById('nextBtn').disabled=!(state.answers.rf_none||labels.some(([id])=>state.answers[id])||extra.some(([id])=>state.answers[id]==='yes'));
+  const selected=()=>{state.answers.rf_none=false;document.getElementById('safetyNone').checked=false;ready();};
+  document.querySelectorAll('[data-safety]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.safety]=el.checked;selected();});
+  document.querySelectorAll('[data-safety-extra]').forEach(el=>el.onchange=()=>{state.answers[el.dataset.safetyExtra]=el.checked?'yes':'no';selected();});
+  document.getElementById('safetyNone').onchange=e=>{state.answers.rf_none=e.target.checked;if(e.target.checked){labels.forEach(([id])=>state.answers[id]=false);extra.forEach(([id])=>state.answers[id]='no');document.querySelectorAll('[data-safety], [data-safety-extra]').forEach(el=>el.checked=false);}ready();};
+  ready();document.getElementById('backBtn').onclick=showWelcome;
+  document.getElementById('nextBtn').onclick=()=>{extra.forEach(([id])=>{if(state.answers[id]!=='yes')state.answers[id]='no';});if(state.answers.rf_circulation==='yes')showEmergency();else showRedFlagVas();};
 }
 function showRedFlagVas() {
   setQuarter(0);
   renderSafety(`<p class="eyebrow">Q1 · ${uiText('Pain','疼痛程度')}</p><h1 class="title">${uiText('How painful is the current episode?','这次不适期间，疼痛最严重时有几分？')}</h1><p class="subtitle">${uiText('Rate pain during the injury stage you are describing, not after recovery.','请按这次填写的伤病阶段选择分数；不要用恢复后的感受代替受伤时的感受。')}</p><div class="card"><label for="vasSlider">${uiText('Pain score (0–10)','疼痛评分（0–10）')}</label><div class="vas-wrap"><div class="vas-value" id="vasValue" aria-live="polite">${state.answers.vas??'—'}</div><input id="vasSlider" type="range" min="0" max="10" step="1" value="${state.answers.vas??0}" aria-describedby="vasHelp"><div class="vas-scale">${Array.from({length:11},(_,i)=>`<span>${i}</span>`).join('')}</div></div><p id="vasHelp">${uiText('0 = no pain; 10 = unbearable. Tap or drag the slider to choose.','0＝完全不痛；10＝无法忍受。点击或拖动滑条选择分数。')}</p></div><div class="btn-row"><button class="btn btn-secondary" id="backBtn">${uiText('Back','返回')}</button><button class="btn btn-primary" id="nextBtn" ${state.answers.vas===undefined?'disabled':''}>${uiText('Continue','下一步')}</button></div>`);
   const el=document.getElementById('vasSlider');
-  const updateVas=()=>{state.answers.vas=Number(el.value);document.getElementById('vasValue').textContent=el.value;delete state.answers.rf_pain_timing;document.getElementById('nextBtn').disabled=false;};
+  const updateVas=()=>{state.answers.vas=Number(el.value);document.getElementById('vasValue').textContent=el.value;document.getElementById('nextBtn').disabled=false;};
   el.oninput=updateVas;el.onchange=updateVas;el.onclick=updateVas;
   document.getElementById('backBtn').onclick=showRedFlagChecklist;document.getElementById('nextBtn').onclick=showSafetyFollowup;
 }
@@ -239,7 +246,7 @@ function completeSafetyRecord() {
   renderSafety(`<h1 class="title">${result.level==='immediate'?uiText('Seek emergency care now','请立即就医'):uiText('Prompt medical assessment advised','请尽快接受专业评估')}</h1><div class="card"><p>${uiText('This is a record of your answers, not a diagnosis.','以下为你的自述记录，不是医学诊断。')}</p>${result.reasons.map(r=>`<p>• ${triageText(r)}</p>`).join('')}${PainmapTriage.active(state.answers).filter(q=>state.answers[q.field]).map(q=>`<p><strong>${triageText(q)}</strong><br>${triageText(q.options.find(o=>o.v===state.answers[q.field]))}</p>`).join('')}<p>${uiText('Pain score','疼痛评分')}：${state.answers.vas??uiText('Not answered','未填写')}/10</p>${Object.entries(state.answers.safety_summary||{}).map(([k,v])=>`<p><strong>${({location:uiText('Location','位置'),onset:uiText('Onset','发生经过'),progress:uiText('Symptoms / previous care','症状／此前诊疗')})[k]}</strong><br><span style="white-space:pre-wrap">${triageEscape(v)||'—'}</span></p>`).join('')}<p>${uiText('Stop sport and do not perform movement tests. Do not delay care to finish or print this summary. If symptoms worsen or the foot becomes cold, discoloured or numb, seek emergency care.','暂停运动，不做动作测试；不要为了完成或打印摘要延误就医。如症状加重，或脚发冷、变色、麻木，请立即就医。')}</p></div>${dataSaveStatusHtml()}<div class="btn-row"><button class="btn btn-secondary" id="printBtn">${uiText('Print / save PDF','打印／保存PDF')}</button><button class="btn btn-secondary" id="restartBtn">${uiText('Start a new screening','重新开始筛查')}</button></div>`);
   // Keep legacy outcome values accepted by the existing database; detailed routing is in answers.
   saveScreeningRecord('emergency_stop',null,{},[],true);
-  document.getElementById('printBtn').onclick=()=>window.print();document.getElementById('restartBtn').onclick=()=>location.reload();
+  document.getElementById('printBtn').onclick=()=>window.print();document.getElementById('restartBtn').onclick=restartScreening;
 }
 
 // ---------------------------------------------------------
@@ -253,9 +260,9 @@ function showModeSelect() {
     <p class="subtitle">For example, an ankle roll, awkward landing, or landing on another player's foot where you can identify the exact moment symptoms began. If you are unsure, both acute and overuse conditions will remain eligible.</p>
     <div class="card">
       <div class="options">
-        <button class="opt" data-v="acute"><span class="num">1</span><span>有 — 能明确指出受伤的那一刻（急性）</span></button>
-        <button class="opt" data-v="chronic"><span class="num">2</span><span>没有 — 是训练后逐渐出现的疼痛（慢性 / 劳损）</span></button>
-        <button class="opt" data-v="unknown"><span class="num">3</span><span>不知道 / 不确定</span></button>
+        <button class="opt ${state.mode==='acute'?'selected':''}" data-v="acute"><span class="num">1</span><span>有 — 能明确指出受伤的那一刻（急性）</span></button>
+        <button class="opt ${state.mode==='chronic'?'selected':''}" data-v="chronic"><span class="num">2</span><span>没有 — 是训练后逐渐出现的疼痛（慢性 / 劳损）</span></button>
+        <button class="opt ${state.mode==='unknown'?'selected':''}" data-v="unknown"><span class="num">3</span><span>不知道 / 不确定</span></button>
       </div>
     </div>
     <div class="btn-row"><button class="btn btn-secondary" id="backBtn">← 返回</button></div>
@@ -263,6 +270,7 @@ function showModeSelect() {
   document.getElementById("backBtn").onclick = showRedFlagVas;
   document.querySelectorAll(".opt").forEach((el) => {
     el.onclick = () => {
+      if(state.mode && state.mode !== el.dataset.v) state._latestStep=null;
       state.mode = el.dataset.v;
       state.answers.onset_event = el.dataset.v;
       state.qIndex = 0;
@@ -311,6 +319,7 @@ function showStandingPainStep() {
 function renderQuestion(q, onNext, onBack) {
   const label = q.field === "mechanism" ? "受伤机制" : q.title;
   const multi = !!q.multi;
+  if(state.answers[q.field]===undefined&&state._answerArchive?.[q.field]!==undefined)state.answers[q.field]=state._answerArchive[q.field];
   const currentVal = state.answers[q.field];
 
   render(`
@@ -359,6 +368,8 @@ function renderQuestion(q, onNext, onBack) {
         const selectedValue = q.options[Number(el.dataset.optionIndex)].v;
         state.answers[q.field] = selectedValue;
         if (q.field === "swelling_severity" && selectedValue === "无") {
+          state._answerArchive ||= {};
+          if(state.answers.swelling_timing!==undefined)state._answerArchive.swelling_timing=state.answers.swelling_timing;
           delete state.answers.swelling_timing;
         }
         onNext();
@@ -518,7 +529,7 @@ function showScoreBreakdown() {
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
     saveScreeningRecord("emergency_stop", result, result.scores, [], true);
-    document.getElementById("restartBtn").onclick = () => location.reload();
+    document.getElementById("restartBtn").onclick = restartScreening;
     return;
   }
 
@@ -673,7 +684,7 @@ function showSpecialTestScreen() {
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
     saveScreeningRecord("emergency_stop", base, base.scores, [], true);
-    document.getElementById("restartBtn").onclick = () => location.reload();
+    document.getElementById("restartBtn").onclick = restartScreening;
     return;
   }
 
@@ -813,7 +824,7 @@ function showResults() {
       <div class="btn-row"><button class="btn btn-secondary" id="restartBtn">重新开始</button></div>
     `);
     saveScreeningRecord("emergency_stop", base, scores, [], true);
-    document.getElementById("restartBtn").onclick = () => location.reload();
+    document.getElementById("restartBtn").onclick = restartScreening;
     return;
   }
 
@@ -883,10 +894,91 @@ function showResults() {
   saveScreeningRecord(ranking.length ? "completed" : "no_candidate", base, scores, ranking, false);
 
   document.getElementById("printBtn").onclick = () => window.print();
-  document.getElementById("restartBtn").onclick = () => location.reload();
+  document.getElementById("restartBtn").onclick = restartScreening;
 }
 
 // ---------------------------------------------------------
 // BOOT
 // ---------------------------------------------------------
+// Local draft and revision navigation. No draft is sent to the research database.
+const DRAFT_KEY='painmap.screening.draft.v1';
+const DRAFT_FIELDS=['answers','testResults','mode','qIndex','aIndex','yIndex','fIndex','dataConsent','sessionId','submissionId','_currentStep','_latestStep','_answerArchive'];
+let draftEnabled=false,draftStorageFailed=false;
+function persistDraft(){
+  if(!draftEnabled)return;
+  try{window.localStorage.setItem(DRAFT_KEY,JSON.stringify({version:1,savedAt:Date.now(),data:Object.fromEntries(DRAFT_FIELDS.map(k=>[k,state[k]]))}));draftStorageFailed=false;}
+  catch(_){draftStorageFailed=true;}
+}
+function watchDraft(value){
+  if(!value||typeof value!=='object')return value;
+  return new Proxy(value,{get(o,k){return watchDraft(o[k]);},set(o,k,v){const changed=o[k]!==v;o[k]=v;if(changed){state._base=null;persistDraft();}return true;},deleteProperty(o,k){delete o[k];state._base=null;persistDraft();return true;}});
+}
+const STEP_DEFS={showWelcome:[0],showRedFlagChecklist:[10],showRedFlagVas:[20],showSafetyFollowup:[30],finishSafety:[40],showModeSelect:[50],showQuestionnaireStep:[60,'qIndex'],showStandingPainStep:[90],showPainMapPrimary:[100],showPainShape:[110],showPainDepth:[120],showAdditionalStep:[130,'aIndex'],showYesNoStep:[160,'yIndex'],showFunctionalStep:[190,'fIndex'],showScoreBreakdown:[220],showSpecialTestScreen:[230],showResults:[240],showEmergency:[-1],showSafetySummary:[-1],completeSafetyRecord:[-1]};
+function enterStep(name){
+  const [rank,index]=STEP_DEFS[name];
+  state._currentStep={name,index:index?state[index]:null,rank:rank+(index?state[index]:0)};
+  if(rank>=0&&(!state._latestStep||state._currentStep.rank>state._latestStep.rank))state._latestStep={...state._currentStep};
+  persistDraft();
+}
+function goToStep(step){
+  if(!step||!STEP_DEFS[step.name])return showRedFlagChecklist();
+  if(step.rank>40){
+    if(!state.answers.rf_none&&!['unable_to_weight_bear','deformity','severe_rest_pain','night_pain','neurological_symptoms'].some(k=>state.answers[k])&&state.answers.rf_circulation!=='yes'&&state.answers.rf_systemic!=='yes')return showRedFlagChecklist();
+    if(state.answers.vas===undefined)return showRedFlagVas();
+    if(PainmapTriage.active(state.answers).some(q=>(q.flag||q.highPain)&&!state.answers[q.field]))return showSafetyFollowup();
+    if(PainmapTriage.evaluate(state.answers).level!=='continue')return showEmergency();
+    if(step.rank>50&&!state.mode)return showModeSelect();
+    // Changed branches may introduce a question that has never been answered.
+    if(step.rank>=100){const missing=currentQuestionSet().findIndex(q=>state.answers[q.field]===undefined);if(missing>=0){state.qIndex=missing;return showQuestionnaireStep();}}
+    if(step.rank>100&&!PAIN_MAP_REGIONS[state.answers.primary_location]?.includes(state.answers.secondary_location))return showPainMapPrimary();
+    if(step.rank>110&&state.answers.pain_shape===undefined)return showPainShape();
+    if(step.rank>120&&state.answers.pain_depth===undefined)return showPainDepth();
+    if(step.rank>=160){const i=ADDITIONAL_QUESTIONS.findIndex(q=>!(q.skipIf&&q.skipIf(state.answers))&&state.answers[q.field]===undefined);if(i>=0){state.aIndex=i;return showAdditionalStep();}}
+    if(step.rank>=190){const i=applicableYesNo().findIndex(q=>state.answers[q.field]===undefined);if(i>=0){state.yIndex=i;return showYesNoStep();}}
+    if(step.rank>=220){const i=FUNCTIONAL_TESTS.findIndex(q=>state.answers[q.field]===undefined);if(i>=0){state.fIndex=i;return showFunctionalStep();}}
+  }
+  const index=STEP_DEFS[step.name][1];if(index)state[index]=Math.max(0,Number(step.index)||0);
+  state._base=null;STEP_ACTIONS[step.name]();
+}
+function restartScreening(){try{window.localStorage.removeItem(DRAFT_KEY);}catch(_){}draftEnabled=false;location.reload();}
+function renderDraftNavigation(){
+  if(!appEl.insertAdjacentHTML)return;
+  const current=state._currentStep,latest=state._latestStep;
+  if(!current)return;
+  const canReturn=latest&&latest.rank>current.rank&&current.rank>=0;
+  const message=draftStorageFailed?uiText('This browser cannot save a draft. Keep this tab open.','此浏览器暂时无法保存草稿，请保持页面打开。'):uiText('Answers are saved on this device, separately from anonymous research submission.','答案自动保存在本设备，与匿名研究提交分开。');
+  appEl.insertAdjacentHTML('beforeend',`<div class="screen" style="padding-top:0"><p style="font-size:13px;color:#687078">${message}</p>${current.name==='showWelcome'&&latest?.rank>0?`<button class="btn btn-secondary" id="clearDraftBtn">${uiText('Start a new screening','清空草稿，重新开始')}</button> `:''}${canReturn?`<button class="btn btn-secondary" id="resumeLatestBtn">${uiText('Return to where I left off →','回到上次填写位置 →')}</button>`:''}</div>`);
+  if(document.getElementById('clearDraftBtn'))document.getElementById('clearDraftBtn').onclick=restartScreening;
+  if(canReturn)document.getElementById('resumeLatestBtn').onclick=()=>goToStep({...state._latestStep});
+}
+const STEP_ACTIONS={};
+function trackedStep(name,fn){const wrapped=function(...args){enterStep(name);const result=fn(...args);persistDraft();return result;};STEP_ACTIONS[name]=wrapped;return wrapped;}
+
+showWelcome=trackedStep('showWelcome',showWelcome);
+showRedFlagChecklist=trackedStep('showRedFlagChecklist',showRedFlagChecklist);
+showRedFlagVas=trackedStep('showRedFlagVas',showRedFlagVas);
+showSafetyFollowup=trackedStep('showSafetyFollowup',showSafetyFollowup);
+finishSafety=trackedStep('finishSafety',finishSafety);
+showModeSelect=trackedStep('showModeSelect',showModeSelect);
+showQuestionnaireStep=trackedStep('showQuestionnaireStep',showQuestionnaireStep);
+showStandingPainStep=trackedStep('showStandingPainStep',showStandingPainStep);
+showPainMapPrimary=trackedStep('showPainMapPrimary',showPainMapPrimary);
+showPainShape=trackedStep('showPainShape',showPainShape);
+showPainDepth=trackedStep('showPainDepth',showPainDepth);
+showAdditionalStep=trackedStep('showAdditionalStep',showAdditionalStep);
+showYesNoStep=trackedStep('showYesNoStep',showYesNoStep);
+showFunctionalStep=trackedStep('showFunctionalStep',showFunctionalStep);
+showScoreBreakdown=trackedStep('showScoreBreakdown',showScoreBreakdown);
+showSpecialTestScreen=trackedStep('showSpecialTestScreen',showSpecialTestScreen);
+showResults=trackedStep('showResults',showResults);
+showEmergency=trackedStep('showEmergency',showEmergency);
+showSafetySummary=trackedStep('showSafetySummary',showSafetySummary);
+completeSafetyRecord=trackedStep('completeSafetyRecord',completeSafetyRecord);
+try{const saved=JSON.parse(window.localStorage.getItem(DRAFT_KEY)||'null');if(saved?.version===1&&saved.data&&typeof saved.data.answers==='object'){for(const key of DRAFT_FIELDS)if(saved.data[key]!==undefined)state[key]=saved.data[key];}}catch(_){}
+state.answers=watchDraft({...state.answers,language:window.HOOPFOOT_LANG});state.testResults=watchDraft(state.testResults||{});
+draftEnabled=true;
+window.addEventListener?.('pagehide',persistDraft);
+document.addEventListener?.('input',()=>{if(state._currentStep?.name==='showSafetySummary'){state.answers.safety_summary=Object.fromEntries([...document.querySelectorAll('[data-summary]')].map(el=>[el.dataset.summary,el.value]));}persistDraft();});
+// Show the welcome page before restoring a saved session on a shared device.
 showWelcome();
+

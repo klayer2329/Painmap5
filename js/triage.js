@@ -3,8 +3,8 @@
   const pair = (zh, en) => ({zh, en});
   const opt = (v, zh, en) => ({v, ...pair(zh,en)});
   const questions = [
-    {field:'rf_circulation', ...pair('这次伤病是否有以下紧急情况？','Are any of these happening?'), options:[opt('yes','脚明显发冷、发白／发青，或开放伤口伴大量出血','The foot is unusually cold, pale/blue, or there is a wound with heavy bleeding'),opt('no','没有','No'),opt('unsure','不确定是否存在这些情况','Unsure')]},
-    {field:'rf_systemic', ...pair('这次伤病是否发热／寒战，并伴足踝红、热、肿、痛？','Do you have fever or chills along with a red, hot, swollen or painful foot/ankle?'), options:[opt('yes','是','Yes'),opt('no','否','No'),opt('unsure','不确定','Unsure')]},
+    {field:'rf_circulation', ...pair('这次伤病是否有以下紧急情况？','Are any of these happening?'), options:[opt('yes','脚明显发冷、发白／发青，或开放伤口伴大量出血','The foot is unusually cold, pale/blue, or there is a wound with heavy bleeding'),opt('no','没有或不确定','No or unsure')]},
+    {field:'rf_systemic', ...pair('这次伤病是否发热／寒战，并伴足踝红、热、肿、痛？','Do you have fever or chills along with a red, hot, swollen or painful foot/ankle?'), options:[opt('yes','是','Yes'),opt('no','没有或不确定','No or unsure')]},
     {field:'rf_weight', flag:'unable_to_weight_bear', ...pair('关于不能走路／负重，具体是哪种情况？','What do you mean by difficulty bearing weight?'), options:[opt('current','无法负重，或不能独立走几步','cannot bear weight or walk more than a few steps'),opt('painful','能走几步，但走路疼','Can walk a few steps, but it hurts'),opt('unsure','不确定','Unsure')]},
     {field:'rf_shape', flag:'deformity', ...pair('形状改变是什么时候出现的？','When did the change in shape appear?'), options:[opt('new','本次受伤后新出现明显变形／角度异常','A new deformity or odd angle after this injury'),opt('longstanding','长期存在且没有新变化，例如原有扁平足','Longstanding shape, such as flat feet, without a new change'),opt('changing','逐渐改变或足弓继续塌陷','A recent gradual change or progressively collapsing arch'),opt('unsure','不确定是不是新出现的','Unsure whether it is new')]},
     {field:'rf_rest', flag:'severe_rest_pain', ...pair('剧烈疼痛在什么时候出现？','When does the severe pain occur?'), options:[opt('current','不动也持续很痛／越来越痛','Severe ongoing pain at rest, or worsening pain'),opt('movement','只在活动时很痛','Severe pain with activity'),opt('unsure','不确定','Unsure')]},
@@ -17,8 +17,7 @@
     const immediate=[],urgent=[];
     const add=(list,zh,en)=>list.push(pair(zh,en));
     if(a.rf_circulation==='yes') add(immediate,'脚发冷／颜色异常或大量出血','Cold/discoloured foot or heavy bleeding');
-    if(a.rf_circulation==='unsure') add(urgent,'无法确认血液循环或出血情况','Circulation or bleeding is uncertain');
-    if(a.rf_systemic && a.rf_systemic!=='no') add(urgent,'发热／寒战伴足踝症状，或不能确认','Fever/chills with foot or ankle symptoms, or uncertainty');
+    if(a.rf_systemic==='yes') add(urgent,'发热／寒战伴足踝症状，或不能确认','Fever/chills with foot or ankle symptoms, or uncertainty');
     if(a.deformity && a.rf_shape!=='longstanding') add(a.rf_shape==='changing'?urgent:immediate,'新出现的形状改变，或无法确认是否为新畸形','New shape change, or uncertainty about a new deformity');
     if(a.neurological_symptoms && a.rf_neuro!=='brief') add(['new','unsure',undefined].includes(a.rf_neuro)?immediate:urgent,'麻木／刺痛／感觉减退或无力','Current numbness, tingling, reduced sensation or weakness');
     if(a.neurological_symptoms && a.rf_neuro==='brief') add(urgent,'这次伤病曾短暂出现麻木或刺痛，需要评估','Recent numbness/tingling needs assessment even if it resolved');

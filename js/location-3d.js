@@ -1,7 +1,7 @@
 /* Foot picker: anatomical surface model; original scoring tokens are unchanged. */
 (function(root){
 'use strict';
-const VERSION='20261001';
+const VERSION='20261003';
 const ZONES=[
  ['外侧','前下','外踝前下方','Front / below outer ankle'],['外侧','中下','外踝正下方','Below outer ankle'],['外侧','后下','外踝后下方','Behind / below outer ankle'],
  ['内侧','前下','内踝前下方','Front / below inner ankle'],['内侧','中下','内踝正下方','Below inner ankle'],['内侧','后下','内踝后下方','Behind / below inner ankle'],['内侧','舟骨区','内侧舟骨区','Inner midfoot / navicular'],
@@ -25,7 +25,7 @@ function classify(x,y,z,ny,deep){
  if(x<-.62&&z>.55&&z<2.50)return z<1.40?15:16;
  if(y>1.7&&z<1.30)return 7;
  if(x>.30&&y<1.13&&z<1.8)return 13;
- return 8;
+ return ny>.30&&z>.85&&z<2.95&&Math.abs(x)<.63?8:-1;
 }
 const jobs={};function load(src,ready){if(ready())return Promise.resolve();if(jobs[src])return jobs[src];jobs[src]=new Promise((resolve,reject)=>{const script=document.createElement('script');const timeout=setTimeout(()=>reject(new Error('timeout')),20000);script.src=src;script.onload=()=>{clearTimeout(timeout);ready()?resolve():reject(new Error('missing asset'));};script.onerror=()=>{clearTimeout(timeout);reject(new Error('asset unavailable'));};document.head.append(script);}).catch(e=>{delete jobs[src];throw e;});return jobs[src];}
 function mount(container,{answers={},language='zh',onChange=()=>{}}={}){
@@ -50,7 +50,7 @@ function mount(container,{answers={},language='zh',onChange=()=>{}}={}){
  select.onchange=()=>choose(select.value===''?-1:Number(select.value),'list');
  container.querySelectorAll('[data-joint]').forEach(b=>b.onclick=()=>choose(Number(b.dataset.joint),'joint-choice'));
  container.querySelectorAll('[data-side]').forEach(b=>b.onclick=()=>{side=b.dataset.side;hover=-1;sync();paint();notify();});
- container.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const next=b.dataset.mode==='deep';if(next===deep)return;deep=next;selected=-1;hover=-1;sync();paint();notify();status.textContent=deep?t('关节内部无法直接从皮肤看到，请选择最接近的关节位置。','The joint interior is not visible through the skin. Choose the closest joint location.'):'';});
+ container.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const next=b.dataset.mode==='deep';if(next===deep)return;deep=next;hover=-1;sync();paint();status.textContent=deep?t('关节内部无法直接从皮肤看到，请选择最接近的关节位置。','The joint interior is not visible through the skin. Choose the closest joint location.'):'';});
  container.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const s=side==='right'?1:-1;const views={outer:[-Math.PI/2*s,.12],inner:[Math.PI/2*s,.12],front:[0,.86],back:[Math.PI,.15],sole:[0,-1.48],default:[-.95*s,.32]};[yaw,pitch]=views[b.dataset.view];if(b.dataset.view==='default')zoom=1;hover=-1;paint();});
  container.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{zoom=Math.max(.75,Math.min(2,zoom*(b.dataset.zoom==='in'?1.15:1/1.15)));draw();});sync();
  Promise.all([load('js/three.min.js?v=128',()=>!!root.THREE),load('js/foot-model.js?v='+VERSION,()=>!!root.PainmapFootModel)]).then(()=>{
@@ -66,7 +66,7 @@ function mount(container,{answers={},language='zh',onChange=()=>{}}={}){
   pick=e=>{const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mouse,camera);const h=ray.intersectObject(foot)[0];return h?(deep?joints:surface)[h.faceIndex]:-2;};
   canvas.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);if(pointers.size===1){gesture={x:e.clientX,y:e.clientY,yaw,pitch,moved:false};pinching=false;}else{const [a,b]=[...pointers.values()];gesture={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom};pinching=true;}});
   canvas.addEventListener('pointermove',e=>{if(pointers.has(e.pointerId)){pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size>=2){const [a,b]=[...pointers.values()];zoom=Math.max(.75,Math.min(2,gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,gesture.distance)));draw();return;}if(pinching||!gesture)return;const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;if(Math.hypot(dx,dy)>5)gesture.moved=true;if(gesture.moved){yaw=gesture.yaw-dx*.008;pitch=Math.max(-1.50,Math.min(1.50,gesture.pitch+dy*.007));hover=-1;draw();}return;}const h=pick(e),id=h>=0?h:-1;if(id!==hover){hover=id;paint();}});
-  canvas.addEventListener('pointerup',e=>{if(!pointers.has(e.pointerId))return;const wasPinch=pinching;pointers.delete(e.pointerId);if(!wasPinch&&gesture&&!gesture.moved){const h=pick(e);if(h>=0)choose(h);else if(h===-1){selected=-1;hover=-1;sync();paint();notify();status.textContent=t('这处表面暂未覆盖。请按名称核对位置，不要勉强选择相邻区域。','This surface is not covered. Check the location list; do not choose an unrelated area.');}}if(!pointers.size){gesture=null;pinching=false;}});
+  canvas.addEventListener('pointerup',e=>{if(!pointers.has(e.pointerId))return;const wasPinch=pinching;pointers.delete(e.pointerId);if(!wasPinch&&gesture&&!gesture.moved){const h=pick(e);if(h>=0)choose(h);else if(h===-1){hover=-1;paint();status.textContent=t('这处表面暂未覆盖。请按名称核对位置，不要勉强选择相邻区域。','This surface is not covered. Check the location list; do not choose an unrelated area.');}}if(!pointers.size){gesture=null;pinching=false;}});
   canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);if(!pointers.size){gesture=null;pinching=false;}});canvas.addEventListener('pointerleave',()=>{if(!pointers.size){hover=-1;paint();}});canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.75,Math.min(2,zoom-e.deltaY*.001));draw();},{passive:false});canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('.pm-list').open=true;badge.textContent=t('三维显示已暂停，请使用下方位置列表。','3D display paused. Please use the location list.');});resize();paint();
  }).catch(()=>{if(disposed)return;$('.pm-list').open=true;badge.textContent=t('三维模型暂时无法加载，请使用下方位置列表。','3D model unavailable. Please use the location list below.');});
  return {dispose(){disposed=true;resizeObserver?.disconnect();geometry?.dispose();material?.dispose();texture?.dispose();capGeometry?.dispose();capMaterial?.dispose();renderer?.dispose();},getSelection(){return selected>=0?{zone:selected,side}:null;}};
