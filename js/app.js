@@ -55,6 +55,7 @@ function setDataSaveStatus(message, type = "") {
 }
 
 function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [], emergency = false) {
+  savePersonalRecord(outcome,base,finalScores,ranking,emergency);
   if (!state.dataConsent || state.submissionId) return;
   if (state._submissionPromise) return;
   const store = window.ScreeningDataStore;
@@ -91,6 +92,24 @@ function saveScreeningRecord(outcome, base = null, finalScores = {}, ranking = [
   });
 }
 
+// A completed snapshot is immutable. Editing starts a linked new snapshot.
+function invalidatePersonalSnapshot(){
+  if(state._personalSaved){state._sourceId=state._personalId;state._personalId=window.ScreeningDataStore?.uuid?.();state._personalSaved=false;}
+}
+function savePersonalRecord(outcome,base,scores,ranking,emergency){
+  if(!window.PainmapAccount?.user)return;
+  let panel=document.getElementById('personalSaveStatus');
+  if(!panel&&appEl.insertAdjacentHTML){appEl.insertAdjacentHTML('beforeend','<div class="screen"><div class="card"><p id="personalSaveStatus" role="status"></p><a href="account.html">'+uiText('My records and recovery →','我的记录与康复 →')+'</a></div></div>');panel=document.getElementById('personalSaveStatus');}
+  if(state._personalSaved){if(panel)panel.textContent=uiText('Saved to your account.','已保存到你的个人账户。');return;}
+  if(state._personalPromise)return;
+  if(panel)panel.textContent=uiText('Saving to your account…','正在保存到你的个人账户…');
+  const captured=JSON.parse(JSON.stringify({_recordLabel:state._recordLabel,_reportText:appEl.querySelector?.('.screen')?.innerText||'',answers:state.answers,testResults:state.testResults,mode:state.mode,_personalId:state._personalId||(state._personalId=window.ScreeningDataStore.uuid()),_episodeId:state._episodeId||(state._episodeId=window.ScreeningDataStore.uuid()),_sourceId:state._sourceId}));
+  persistDraft();
+  state._personalPromise=window.PainmapAccount.save(captured,outcome,base,scores,ranking,emergency).then(()=>{
+    if(state._personalId===captured._personalId){if(JSON.stringify(state.answers)===JSON.stringify(captured.answers)&&JSON.stringify(state.testResults)===JSON.stringify(captured.testResults)&&state.mode===captured.mode){state._personalSaved=true;}else{state._sourceId=captured._personalId;state._personalId=window.ScreeningDataStore.uuid();state._personalSaved=false;}persistDraft();}
+    const el=document.getElementById('personalSaveStatus');if(el)el.textContent=uiText('Saved to your account.','已保存到你的个人账户。');
+  }).catch(()=>{const el=document.getElementById('personalSaveStatus');if(el){el.textContent=uiText('Account save failed. Your draft is still on this device. ','账户保存失败，草稿仍保留在本设备。');const retry=document.createElement('button');retry.className='btn btn-secondary';retry.textContent=uiText('Retry saving','重新保存');retry.onclick=()=>savePersonalRecord(outcome,base,scores,ranking,emergency);el.appendChild(retry);}}).finally(()=>{state._personalPromise=null;});
+}
 function beginNewDataSession() {
   state.sessionId = window.ScreeningDataStore?.uuid?.() || null;
   state.submissionId = null;
@@ -117,6 +136,7 @@ function renderQuestionReference(field) {
 function showWelcome() {
   setQuarter(0);
   render(`
+    ${window.PainmapAccount?.user?`<div class="card"><strong>${uiText('Personal screening record','个人筛查记录')}</strong><p>${uiText('Your answers and results will be saved to your signed-in account when you finish. Research sharing below is optional and separate.','完成后，你的答案和结果会保存到当前登录的个人账户。下方匿名研究授权是独立的，可自行选择。')}</p><a href="account.html">${uiText('View my account','查看我的账户')}</a></div>`:''}
     <p class="eyebrow">Basketball Foot &amp; Ankle Screening</p>
     <h1 class="title">Basketball Foot &amp; Ankle Injury Screening System</h1>
     <p class="subtitle">A preliminary risk-screening tool for basketball athletes ages 12–18 with foot or ankle pain, sprains, landing injuries, running or jumping pain, or gradual training-related symptoms.</p>
@@ -157,6 +177,7 @@ function showWelcome() {
     start.disabled = !consent.checked;
     persistDraft();
   };
+  if(window.PainmapAccount?.user)document.getElementById("privateStartBtn").textContent=uiText("Continue without research sharing","仅保存到个人账户并继续");
   document.getElementById("privateStartBtn").onclick = () => { state.dataConsent = false; showRedFlagChecklist(); };
   start.onclick = () => { state.dataConsent = true; showRedFlagChecklist(); };
   document.getElementById("languageBtn").onclick = window.restartWithLanguageChoice;
@@ -901,8 +922,8 @@ function showResults() {
 // BOOT
 // ---------------------------------------------------------
 // Local draft and revision navigation. No draft is sent to the research database.
-const DRAFT_KEY='painmap.screening.draft.v1';
-const DRAFT_FIELDS=['answers','testResults','mode','qIndex','aIndex','yIndex','fIndex','dataConsent','sessionId','submissionId','_currentStep','_latestStep','_answerArchive'];
+const DRAFT_KEY=window.PainmapAccount?.draftKey?.()||'painmap.screening.draft.v1';
+const DRAFT_FIELDS=['answers','testResults','mode','qIndex','aIndex','yIndex','fIndex','dataConsent','sessionId','submissionId','_currentStep','_latestStep','_answerArchive','_personalId','_episodeId','_sourceId','_personalSaved','_recordLabel'];
 let draftEnabled=false,draftStorageFailed=false;
 function persistDraft(){
   if(!draftEnabled)return;
@@ -911,7 +932,7 @@ function persistDraft(){
 }
 function watchDraft(value){
   if(!value||typeof value!=='object')return value;
-  return new Proxy(value,{get(o,k){return watchDraft(o[k]);},set(o,k,v){const changed=o[k]!==v;o[k]=v;if(changed){state._base=null;persistDraft();}return true;},deleteProperty(o,k){delete o[k];state._base=null;persistDraft();return true;}});
+  return new Proxy(value,{get(o,k){return watchDraft(o[k]);},set(o,k,v){const changed=o[k]!==v;o[k]=v;if(changed){invalidatePersonalSnapshot();state._base=null;persistDraft();}return true;},deleteProperty(o,k){invalidatePersonalSnapshot();delete o[k];state._base=null;persistDraft();return true;}});
 }
 const STEP_DEFS={showWelcome:[0],showRedFlagChecklist:[10],showRedFlagVas:[20],showSafetyFollowup:[30],finishSafety:[40],showModeSelect:[50],showQuestionnaireStep:[60,'qIndex'],showStandingPainStep:[90],showPainMapPrimary:[100],showPainShape:[110],showPainDepth:[120],showAdditionalStep:[130,'aIndex'],showYesNoStep:[160,'yIndex'],showFunctionalStep:[190,'fIndex'],showScoreBreakdown:[220],showSpecialTestScreen:[230],showResults:[240],showEmergency:[-1],showSafetySummary:[-1],completeSafetyRecord:[-1]};
 function enterStep(name){
@@ -982,3 +1003,5 @@ document.addEventListener?.('input',()=>{if(state._currentStep?.name==='showSafe
 // Show the welcome page before restoring a saved session on a shared device.
 showWelcome();
 
+
+window.addEventListener?.("painmap-account-change",()=>location.reload());
