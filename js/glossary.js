@@ -69,7 +69,7 @@
     const nodes = [];
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      if (node.parentElement && !node.parentElement.closest(".clinical-term, script, style, .glossary-backdrop") && pattern.test(node.nodeValue)) nodes.push(node);
+      if (node.parentElement && !node.parentElement.closest(".clinical-term, a, button, .result-guidance, script, style, .glossary-backdrop") && pattern.test(node.nodeValue)) nodes.push(node);
       pattern.lastIndex = 0;
     }
     nodes.forEach((node) => {

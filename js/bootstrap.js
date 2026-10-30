@@ -48,14 +48,16 @@
     app.setAttribute("aria-busy", "true");
     app.innerHTML = `<div class="screen language-loading">${language === "zh" ? "正在加载筛查…" : "Loading screening…"}</div>`;
     try {
+      if (!window.PainmapResultCopy) await loadScript("js/data/result-guidance.js?v=20261029");
+      if (!window.PainmapGuidance) await loadScript("js/result-guidance.js?v=20261029");
       await loadScript("js/en.js?v=20260716-language");
-      await loadScript("js/glossary.js?v=20260716-language");
+      await loadScript("js/glossary.js?v=20261029-guidance");
       await loadScript("js/dataStore.js?v=20261003-progress");
       await loadScript("js/account-store.js?v=20261004-accounts2");
       await window.PainmapAccount.init();
       await loadScript("js/triage.js?v=20261003-progress");
       await loadScript("js/location-3d.js?v=20261003-progress");
-      await loadScript("js/app.js?v=20261004-accounts2");
+      await loadScript("js/app.js?v=20261029-guidance");
     } catch (error) {
       console.error(error);
       app.innerHTML = `<div class="screen"><div class="card language-error">${language === "zh" ? "页面加载失败，请刷新后重试。" : "The page could not load. Please refresh and try again."}</div></div>`;

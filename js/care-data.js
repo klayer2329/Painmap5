@@ -438,6 +438,66 @@ window.PainmapCareData = {
       "timer": 0,
       "restricted": false,
       "variants": []
+    },
+    "toe-press": {
+      "title": "大脚趾压地控制",
+      "sub": "",
+      "equip": "",
+      "steps": [],
+      "note": "",
+      "dose": "",
+      "timer": 0,
+      "restricted": false,
+      "variants": [],
+      "pending": true
+    },
+    "landing-control": {
+      "title": "落地、减速与变向",
+      "sub": "",
+      "equip": "",
+      "steps": [],
+      "note": "",
+      "dose": "",
+      "timer": 0,
+      "restricted": false,
+      "variants": [],
+      "pending": true
+    },
+    "plantar-stretch": {
+      "title": "足底筋膜牵伸",
+      "sub": "",
+      "equip": "",
+      "steps": [],
+      "note": "",
+      "dose": "",
+      "timer": 0,
+      "restricted": false,
+      "variants": [],
+      "pending": true
+    },
+    "calf-stretch": {
+      "title": "小腿牵伸",
+      "sub": "",
+      "equip": "",
+      "steps": [],
+      "note": "",
+      "dose": "",
+      "timer": 0,
+      "restricted": false,
+      "variants": [],
+      "pending": true
+    },
+    "achilles-animation": {
+      "title": "跟腱传力动图",
+      "sub": "",
+      "equip": "",
+      "steps": [],
+      "note": "",
+      "dose": "",
+      "timer": 0,
+      "restricted": false,
+      "variants": [],
+      "pending": true
     }
   },
   "groups": {
@@ -503,6 +563,13 @@ window.PainmapCareData = {
           [
             "contrast"
           ]
+        ],
+        [
+          "牵伸教程",
+          [
+            "plantar-stretch",
+            "calf-stretch"
+          ]
         ]
       ]
     },
@@ -532,14 +599,16 @@ window.PainmapCareData = {
             "short",
             "ballraise",
             "toes",
-            "towel"
+            "towel",
+            "toe-press"
           ]
         ],
         [
           "弹性与落地",
           [
             "pogo",
-            "rearhop"
+            "rearhop",
+            "landing-control"
           ]
         ]
       ]
@@ -566,6 +635,18 @@ window.PainmapCareData = {
           "暂时避免",
           [
             "avoid"
+          ]
+        ]
+      ]
+    },
+    "explain": {
+      "title": "伤病图解",
+      "sub": "",
+      "groups": [
+        [
+          "图解与动图",
+          [
+            "achilles-animation"
           ]
         ]
       ]

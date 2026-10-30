@@ -859,6 +859,7 @@ function showResults() {
     <p class="subtitle">The score is an absolute questionnaire feature score: 40 points for the selected pain location and 60 points for other compatible features. It is not a probability or diagnosis.</p>
     <div class="screening-summary"><strong>Selected pain location</strong><span>${selectedLocation}</span></div>
 
+    ${ranking.length ? `<div class="guidance-intro" lang="zh-CN">${window.PainmapResultCopy.intro.split("\n\n").slice(1).join("<br>")}</div>` : ""}
     ${ranking.map((r, i) => `
       <div class="result-card ${i===0 ? "rank1":""}" data-rank="${i+1}">
         <div class="result-head">
@@ -884,13 +885,7 @@ function showResults() {
         }).join("") || "<span class='test-chip'>General clinical examination</span>"}</div>
         ${testAdjustmentNote(r.key)}
 
-        <div class="rehab-box">
-          <div class="section-label">Rehabilitation / training guidance</div>
-          <p class="rehab-principle">When the joint is stable and movement has been medically cleared, pain-free muscle contractions can help reduce swelling.</p>
-          <ul class="rehab-list">
-            ${(REHAB[r.key] || REHAB_FALLBACK).map((line) => `<li>${line}</li>`).join("")}
-          </ul>
-        </div>
+        ${window.PainmapGuidance?.render(r.key) || `<div class="rehab-box"><div class="section-label">康复建议</div><p>请先由医生确认具体损伤与当前恢复阶段，再制定适合你的康复方案。</p></div>`}
       </div>
     `).join("")}
 
