@@ -1,0 +1,13 @@
+.result-guidance{margin-top:24px;border-top:1px solid #e5dfd5;padding-top:20px;color:#26344a;line-height:1.9;font-size:16px;overflow-wrap:anywhere}
+.result-guidance h3{font-size:20px;margin:0 0 20px;color:#17243c}
+.result-guidance p{margin:0 0 18px;white-space:pre-line}
+.result-guidance figure{margin:24px auto;max-width:580px;text-align:center;scroll-margin-top:100px}
+.result-guidance img{display:block;width:auto;max-width:100%;height:auto;max-height:500px;margin:auto;object-fit:contain;background:white;border-radius:12px}
+.result-guidance figcaption{font-size:12px;color:#657084;margin-top:8px}
+.guidance-link{display:inline-block;margin:0 3px;color:#a84300;text-decoration:underline;text-underline-offset:3px;font-size:.92em}
+.guidance-link:focus-visible,.guidance-nav a:focus-visible{outline:3px solid #c65315;outline-offset:3px}
+.guidance-nav{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.guidance-nav a{padding:10px 14px;background:#fff3e8;border:1px solid #e8d4bd;border-radius:9px;color:#843900;font-weight:600;text-decoration:none}
+.guidance-intro{padding:16px 20px;background:#f7f4ef;border-radius:12px;line-height:1.8;margin:18px 0 24px}
+@media(max-width:600px){.result-guidance{font-size:16px}.result-guidance figure{margin:20px 0}.guidance-nav a{flex:1;text-align:center}}
+@media print{.result-guidance figure{break-inside:avoid}.guidance-nav{display:none}.result-guidance a{color:inherit}}
