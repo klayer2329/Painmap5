@@ -7,7 +7,7 @@
     { key:"plantarflexion", en:["plantarflexion"], zh:["跖屈"], title:["Plantarflexion","跖屈"], desc:["The foot points downward, like pressing a gas pedal or rising onto the toes.","脚踝带动整个脚向下绷，像轻踩油门；不是只把脚趾蜷起来。"], visual:"down" },
     { key:"medial", en:["medial"], zh:["内侧"], title:["Medial","内侧"], desc:["The side closer to the body's midline. At the ankle, this is the big-toe side.","靠近身体中线的一侧；在脚踝处就是大脚趾这一侧。"], visual:"medial" },
     { key:"lateral", en:["lateral"], zh:["外侧"], title:["Lateral","外侧"], desc:["The side farther from the body's midline. At the ankle, this is the little-toe side.","远离身体中线的一侧；在脚踝处就是小脚趾这一侧。"], visual:"lateral" },
-    { key:"malleolus", en:["malleolus","malleoli"], zh:["踝骨","踝尖"], title:["Malleolus","踝骨 / 踝尖"], desc:["One of the two bony ankle bumps. The medial malleolus is inside; the lateral malleolus is outside.","脚踝两侧可摸到的骨性突起；内踝在内侧，外踝在外侧。"], visual:"ankle" },
+    { key:"malleolus", en:["malleolus","malleoli"], zh:["内踝","外踝","踝骨","踝尖"], title:["Malleolus","踝骨 / 踝尖"], desc:["One of the two bony ankle bumps. The medial malleolus is inside; the lateral malleolus is outside.","脚踝两侧可摸到的骨性突起；内踝在内侧，外踝在外侧。"], visual:"ankle" },
     { key:"navicular", en:["navicular"], zh:["舟骨"], title:["Navicular","舟骨"], desc:["A bone on the inner midfoot, just above the arch. Its prominence can be felt in front of the medial ankle.","位于足弓上方的内侧中足骨，通常可在内踝前下方摸到突起。"], visual:"midfoot" },
     { key:"metatarsal", en:["metatarsal","metatarsals"], zh:["跖骨"], title:["Metatarsal","跖骨"], desc:["One of the five long bones between the midfoot and toes.","连接中足与脚趾的五根长骨。"], visual:"forefoot" },
     { key:"mtp", en:["MTP","metatarsophalangeal"], zh:["跖趾关节"], title:["MTP joint","跖趾关节"], desc:["The joint where a toe meets its metatarsal. The first MTP joint is the big-toe joint.","脚趾与跖骨相接的关节；第一跖趾关节就是大脚趾根部关节。"], visual:"toe" },
@@ -69,7 +69,7 @@
     const nodes = [];
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      if (node.parentElement && !node.parentElement.closest(".clinical-term, a, button, .result-guidance, script, style, .glossary-backdrop") && pattern.test(node.nodeValue)) nodes.push(node);
+      if (node.parentElement && !node.parentElement.closest(".clinical-term, a, button:not(.opt), script, style, .glossary-backdrop") && pattern.test(node.nodeValue)) nodes.push(node);
       pattern.lastIndex = 0;
     }
     nodes.forEach((node) => {
