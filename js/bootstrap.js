@@ -51,7 +51,7 @@
       if (!window.PainmapResultCopy) await loadScript("js/data/result-guidance.js?v=20261029");
       if (!window.PainmapGuidance) await loadScript("js/result-guidance.js?v=20261029");
       await loadScript("js/en.js?v=20260716-language");
-      await loadScript("js/glossary.js?v=20261029-guidance");
+      await loadScript("js/glossary.js?v=20261107-restore");
       await loadScript("js/dataStore.js?v=20261003-progress");
       await loadScript("js/account-store.js?v=20261004-accounts2");
       await window.PainmapAccount.init();
