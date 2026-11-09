@@ -13,7 +13,7 @@ function route(){
  const [page,id,parent,variant]=bits;
  if(page==='action'&&id==='calf')calfVersion=({weighted:0,single:1,double:2})[variant]??2;
  if(page==='home')root.innerHTML=`<p class="eyebrow">YOUR NEXT STEP</p>${heading('今天，你需要什么？','选择当下需要的支持。')}<div class="entry-grid">${link('rehab','康复模块','赛前准备 · 赛后恢复 · 日常训练')}${link('emergency','紧急处理','刚受伤？先停止运动并检查紧急情况','优先安全')}</div><p class="quiet">护理教程不代替诊断或上场评估。</p>`;
- else if(page==='rehab')root.innerHTML=back('home','首页')+heading('康复模块','按场景选择，按需要练习。')+`<div class="stack">${link('pre','比赛／训练前','热敷 · 活动度 · 激活 · 贴扎','01')}${link('post','训练后短暂恢复','软组织放松 · 热敷 · 冷敷','02')}${link('gym','健身房训练','力量 · 平衡 · 足弓 · 弹性','03')}</div>`+note('当前为教程浏览，不代表已根据筛查确认适合你。具体训练须遵守已有专业限制。');
+ else if(page==='rehab')root.innerHTML=back('home','首页')+heading('康复模块','按场景选择，按需要练习。')+`<div class="stack">${link('pre','比赛／训练前','热敷 · 活动度 · 激活 · 贴扎','01')}${link('post','训练后短暂恢复','软组织放松 · 热敷 · 冷敷','02')}${link('gym','健身房训练','力量 · 平衡 · 足弓 · 弹性','03')}</div><a class="textlink" href="#explain">伤病图解与动图 →</a>`+note('当前为教程浏览，不代表已根据筛查确认适合你。具体训练须遵守已有专业限制。');
  else if(groups[page])renderGroup(page);
  else if(page==='action'&&items[id]&&groups[parent])renderAction(id,parent);
  else if(page==='urgent')renderUrgent();
