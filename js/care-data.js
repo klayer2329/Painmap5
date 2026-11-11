@@ -331,7 +331,8 @@ window.PainmapCareData = {
       "dose": "先轻柔操作1–2分钟",
       "timer": 60,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-ball.png"
     },
     "foam": {
       "title": "泡沫轴小腿放松",
@@ -361,7 +362,8 @@ window.PainmapCareData = {
       "dose": "先轻柔操作1–2分钟",
       "timer": 60,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "mediaType": "none"
     },
     "contrast": {
       "title": "冷热交替",
@@ -407,7 +409,8 @@ window.PainmapCareData = {
       "dose": "",
       "timer": 0,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-compression.png"
     },
     "elevation": {
       "title": "抬高患肢",
@@ -422,7 +425,8 @@ window.PainmapCareData = {
       "dose": "",
       "timer": 0,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-elevation.png"
     },
     "avoid": {
       "title": "暂时避免的处理",
@@ -437,7 +441,8 @@ window.PainmapCareData = {
       "dose": "",
       "timer": 0,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "mediaType": "none"
     },
     "toe-press": {
       "title": "大脚趾压地控制",
@@ -464,7 +469,7 @@ window.PainmapCareData = {
       "pending": true
     },
     "plantar-stretch": {
-      "title": "足底筋膜牵伸",
+      "title": "足底拉伸（足底筋膜牵伸）",
       "sub": "",
       "equip": "",
       "steps": [],
@@ -476,7 +481,7 @@ window.PainmapCareData = {
       "pending": true
     },
     "calf-stretch": {
-      "title": "小腿牵伸",
+      "title": "小腿后侧拉伸",
       "sub": "",
       "equip": "",
       "steps": [],
@@ -488,16 +493,16 @@ window.PainmapCareData = {
       "pending": true
     },
     "achilles-animation": {
-      "title": "跟腱传力动图",
-      "sub": "",
-      "equip": "",
+      "title": "跟腱受拉与断裂示意",
+      "sub": "分阶段了解跟腱的变化",
+      "mediaType": "animation",
       "steps": [],
-      "note": "",
+      "equip": "",
       "dose": "",
       "timer": 0,
       "restricted": false,
       "variants": [],
-      "pending": true
+      "note": "正常背屈不会必然造成断裂；这是其中一种受伤机制示意，不是动作教学。"
     }
   },
   "groups": {
@@ -641,10 +646,10 @@ window.PainmapCareData = {
     },
     "explain": {
       "title": "伤病图解",
-      "sub": "",
+      "sub": "帮助理解伤病",
       "groups": [
         [
-          "图解与动图",
+          "跟腱",
           [
             "achilles-animation"
           ]
