@@ -14,7 +14,8 @@ window.PainmapCareData = {
       "dose": "首次10分钟；一般10–15分钟，已有专业指导时遵其安排。",
       "timer": 600,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-heat-diagram.png"
     },
     "ice": {
       "title": "局部冷敷",
@@ -30,7 +31,8 @@ window.PainmapCareData = {
       "dose": "足踝一般10–15分钟；先从10分钟开始。",
       "timer": 600,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-ice-diagram.png"
     },
     "ankle": {
       "title": "踝背屈／跖屈｜勾脚与绷脚",
@@ -350,7 +352,8 @@ window.PainmapCareData = {
       "dose": "先轻柔操作1–2分钟",
       "timer": 60,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-foam-diagram.png"
     },
     "massage": {
       "title": "轻柔手动按摩",
@@ -382,7 +385,8 @@ window.PainmapCareData = {
       "dose": "按专业人员确认的方案。",
       "timer": 0,
       "restricted": true,
-      "variants": []
+      "variants": [],
+      "image": "assets/reference/care-contrast-diagram.png"
     },
     "protect": {
       "title": "停止运动与保护",
@@ -397,7 +401,8 @@ window.PainmapCareData = {
       "dose": "",
       "timer": 0,
       "restricted": false,
-      "variants": []
+      "variants": [],
+      "mediaType": "none"
     },
     "compression": {
       "title": "适度加压",
